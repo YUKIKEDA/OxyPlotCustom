@@ -19,6 +19,11 @@ namespace OxyPlotCustom.Examples.ParallelCoordinatesSeriesPlots
 
             // ParallelCoordinatesSeriesを作成してPlotModelに追加
             var series = new ParallelCoordinatesSeries(dimensions);
+            
+            // カラーマップを「数学」軸に設定
+            series.ColorMapDimensionName = "Physical";
+            series.ColorMap = OxyPalettes.Jet(256);
+            
             PlotModel.Series.Add(series);
         }
 

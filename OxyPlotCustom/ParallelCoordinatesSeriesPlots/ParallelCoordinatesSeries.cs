@@ -1,5 +1,4 @@
-﻿using System.Windows.Media;
-using OxyPlot;
+﻿using OxyPlot;
 using OxyPlot.Axes;
 using OxyPlot.Series;
 
@@ -104,6 +103,20 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
 
         #endregion
 
+        #region ColorMap
+
+        /// <summary>
+        /// カラーマップに使用する軸の名前（nullの場合はカラーマップを使用しない）
+        /// </summary>
+        public string? ColorMapDimensionName { get; set; }
+
+        /// <summary>
+        /// カラーマップのパレット
+        /// </summary>
+        public OxyPalette ColorMap { get; set; }
+
+        #endregion
+
         public ParallelCoordinatesSeries(Dictionary<string, ParallelCoordinatesDimension> dimensions)
         {
             Dimensions = dimensions;
@@ -130,6 +143,10 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
             AxisTickCount = 5;
             AxisTickLength = 5.0;
             AxisTickLabelHorizontalOffset = 10.0;
+
+            // カラーマップのデフォルト値
+            ColorMapDimensionName = null;
+            ColorMap = OxyPalettes.Jet(256);
 
             #endregion
         }
@@ -233,6 +250,9 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
                 return;
             }
 
+            // ラインの色をカラーマップから取得して設定
+            UpdateLineColorsFromColorMap();
+
             RenderAxes(rc);
             RenderDataLines(rc);
         }
@@ -300,7 +320,7 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
             // 軸のタイトルを下部に描画
             if (ShowAxisLabelsBottom)
             {
-               var titleBottomPoint = new ScreenPoint(x, GetAxisBottomPosition() + AxisLabelVerticalOffset);
+                var titleBottomPoint = new ScreenPoint(x, GetAxisBottomPosition() + AxisLabelVerticalOffset);
                 rc.DrawText(
                     titleBottomPoint,
                     lebel,
@@ -434,6 +454,56 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
                     EdgeRenderingMode.Automatic
                 );
             }
+        }
+
+        #endregion
+
+        #region Rendering Colormap
+
+        /// <summary>
+        /// カラーマップからラインの色を更新します
+        /// </summary>
+        private void UpdateLineColorsFromColorMap()
+        {
+            if (string.IsNullOrEmpty(ColorMapDimensionName) || !Dimensions.TryGetValue(ColorMapDimensionName, out var colorMapDimension))
+            {
+                return;
+            }
+
+            // カラーマップに使用する軸のインデックスを取得
+            var colorMapDimensionIndex = Array.IndexOf(Dimensions.Keys.ToArray(), ColorMapDimensionName);
+
+            if (colorMapDimensionIndex < 0)
+            {
+                return;
+            }
+
+            // 各ラインの色をカラーマップから取得
+            foreach (var lineEntry in Lines)
+            {
+                var line = lineEntry.Value;
+                if (line.Values.Length > colorMapDimensionIndex)
+                {
+                    double value = line.Values[colorMapDimensionIndex];
+                    // 値を0-1の範囲に正規化
+                    double normalizedValue = (value - colorMapDimension.MinValue) / (colorMapDimension.MaxValue - colorMapDimension.MinValue);
+                    normalizedValue = Math.Max(0.0, Math.Min(1.0, normalizedValue)); // 0-1の範囲にクランプ
+                    
+                    // カラーマップから色を取得（インデックスを計算）
+                    int colorIndex = (int)(normalizedValue * (ColorMap.Colors.Count - 1));
+                    colorIndex = Math.Max(0, Math.Min(ColorMap.Colors.Count - 1, colorIndex));
+                    line.Color = ColorMap.Colors[colorIndex];
+                }
+            }
+        }
+
+        /// <summary>
+        /// カラーマップを描画します
+        /// </summary>
+        /// <param name="rc">レンダリングコンテキスト</param>
+        private void RenderColormap(IRenderContext rc)
+        {
+            // カラーバーの描画は一旦無効化
         }
 
         #endregion
