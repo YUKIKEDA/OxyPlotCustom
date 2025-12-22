@@ -366,7 +366,7 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
         #region Rendering Data Lines
 
         /// <summary>
-        /// データ線を描画します
+        /// 全てのデータ線を描画します
         /// </summary>
         /// <param name="rc">レンダリングコンテキスト</param>
         private void RenderDataLines(IRenderContext rc)
@@ -375,11 +375,65 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
             {
                 return;
             }
+
+            // 各ラインを描画
+            foreach (var lineEntry in Lines)
+            {
+                var line = lineEntry.Value;
+                if (line.IsVisible)
+                {
+                    RenderSingleDataLine(rc, line);
+                }
+            }
         }
 
-        private void RenderSingleDataLine(IRenderContext rc)
+        /// <summary>
+        /// 単一のデータ線を描画します
+        /// </summary>
+        /// <param name="rc">レンダリングコンテキスト</param>
+        /// <param name="line">描画するライン</param>
+        private void RenderSingleDataLine(IRenderContext rc, ParallelCoordinatesLine line)
         {
+            if (line.Values.Length != Dimensions.Count)
+            {
+                return;
+            }
 
+            // 利用可能な高さを取得
+            double availableHeight = GetAvailableHeight();
+            double plotBottom = GetAxisBottomPosition();
+
+            // 各軸での座標点を計算
+            var points = new List<ScreenPoint>();
+            for (int i = 0; i < Dimensions.Count; i++)
+            {
+                var dimension = Dimensions.ElementAt(i).Value;
+
+                // 軸のX座標を取得
+                double x = GetAxisXPosition(i);
+
+                // ラインの値を取得
+                double value = line.Values[i];
+
+                // 値を正規化
+                double normalizedValue = (value - dimension.MinValue) / (dimension.MaxValue - dimension.MinValue);
+                
+                // 正規化された値をY座標に変換（下から上に向かって配置）
+                double y = plotBottom - normalizedValue * availableHeight;
+
+                points.Add(new ScreenPoint(x, y));
+            }
+
+            // 点が2つ以上ある場合のみ線を描画
+            if (points.Count >= 2)
+            {
+                rc.DrawLine(
+                    points,
+                    line.Color,
+                    line.StrokeThickness,
+                    EdgeRenderingMode.Automatic
+                );
+            }
         }
 
         #endregion
