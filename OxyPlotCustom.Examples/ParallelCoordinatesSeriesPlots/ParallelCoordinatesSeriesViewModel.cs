@@ -1,6 +1,17 @@
-﻿namespace OxyPlotCustom.Examples.ParallelCoordinatesSeriesPlots
+﻿using OxyPlot;
+
+namespace OxyPlotCustom.Examples.ParallelCoordinatesSeriesPlots
 {
-    internal class ParallelCoordinatesSeriesViewModel
+    public class ParallelCoordinatesSeriesViewModel
     {
+        public PlotModel? PlotModel { get; private set; }
+
+        public ParallelCoordinatesSeriesViewModel()
+        {
+            PlotModel = new PlotModel 
+            { 
+                Title = "Parallel Coordinates Plot Demo" 
+            };
+        }
     }
 }
