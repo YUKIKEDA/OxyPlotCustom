@@ -47,6 +47,11 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
         public object? Tag { get; set; }
 
         /// <summary>
+        /// 正規化済みの値（0.0～1.0）の配列（描画パフォーマンス向上のためのキャッシュ）
+        /// </summary>
+        public double[]? NormalizedValues { get; set; }
+
+        /// <summary>
         /// コンストラクタ
         /// </summary>
         /// <param name="values">各次元（軸）での値の配列</param>

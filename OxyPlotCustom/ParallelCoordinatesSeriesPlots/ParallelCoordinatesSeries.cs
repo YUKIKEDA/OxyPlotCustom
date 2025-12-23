@@ -271,11 +271,42 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
 
             InteractionHandlers = new List<IParallelCoordinatesInteractionHandler>();
 
+            // 正規化済みの値を事前計算（描画パフォーマンス向上のため）
+            PrecomputeNormalizedValues();
+
             // 初期化時にカラーマップから色を設定
             UpdateLineColorsFromColorMap();
         }
 
         #region Initialization
+
+        /// <summary>
+        /// 全ラインの正規化済みの値を事前計算します（描画パフォーマンス向上のため）
+        /// データが変わった時だけ呼び出すことで、描画時の計算量を削減します。
+        /// このメソッドは、データが更新された場合に外部から呼び出すことができます。
+        /// </summary>
+        public void PrecomputeNormalizedValues()
+        {
+            if (!HasDimensions || !HasLines)
+            {
+                return;
+            }
+
+            foreach (var line in Lines)
+            {
+                if (line.Values.Length != Dimensions.Length)
+                {
+                    continue;
+                }
+
+                // 正規化済みの値を計算してキャッシュ
+                line.NormalizedValues = new double[Dimensions.Length];
+                for (int i = 0; i < Dimensions.Length; i++)
+                {
+                    line.NormalizedValues[i] = Dimensions[i].NormalizeValue(line.Values[i]);
+                }
+            }
+        }
 
         /// <summary>
         /// ParallelCoordinatesDimensionの配列から、ParallelCoordinatesLineの配列を作成します
@@ -590,24 +621,15 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
             double plotBottom = GetAxisBottomPosition();
 
             // 各軸での座標点を計算（再利用可能なバッファを使用）
+            // 正規化済みの値のキャッシュを使用して計算量を削減
             _renderPointsBuffer.Clear();
             for (int i = 0; i < Dimensions.Length; i++)
             {
-                var dimension = Dimensions[i];
-
-                // 軸のX座標を取得
                 double x = GetAxisXPosition(i);
-
-                // ラインの値を取得
-                double value = line.Values[i];
-
-                // 値を元のRange（MinValue～MaxValue）に基づいて正規化
-                // 目盛りは常に元の範囲を表示するため、ラインも同じ範囲で計算
-                double normalizedValue = dimension.NormalizeValue(value);
-                
-                // 正規化された値をY座標に変換（下から上に向かって配置）
+                double normalizedValue = line.NormalizedValues != null && line.NormalizedValues.Length > i
+                    ? line.NormalizedValues[i]
+                    : Dimensions[i].NormalizeValue(line.Values[i]);
                 double y = plotBottom - normalizedValue * availableHeight;
-
                 _renderPointsBuffer.Add(new ScreenPoint(x, y));
             }
 
@@ -960,6 +982,7 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
         /// <summary>
         /// 指定したポイントからラインの特定セグメントまでの距離の2乗を計算します（平方根計算を避けるため）
         /// バウンディングボックスを使った早期終了を実装しています。
+        /// 正規化済みの値のキャッシュを使用して計算量を削減します。
         /// </summary>
         /// <param name="point">スクリーン座標</param>
         /// <param name="line">ライン</param>
@@ -976,13 +999,19 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
             double availableHeight = GetAvailableHeight();
             double plotBottom = GetAxisBottomPosition();
 
-            // セグメントの2つの端点を計算
+            // セグメントの2つの端点を計算（キャッシュを使用）
             double x0 = GetAxisXPosition(segmentIndex);
-            double y0 = plotBottom - Dimensions[segmentIndex].NormalizeValue(line.Values[segmentIndex]) * availableHeight;
+            double normalizedValue0 = line.NormalizedValues != null && line.NormalizedValues.Length > segmentIndex
+                ? line.NormalizedValues[segmentIndex]
+                : Dimensions[segmentIndex].NormalizeValue(line.Values[segmentIndex]);
+            double y0 = plotBottom - normalizedValue0 * availableHeight;
             ScreenPoint startPoint = new ScreenPoint(x0, y0);
 
             double x1 = GetAxisXPosition(segmentIndex + 1);
-            double y1 = plotBottom - Dimensions[segmentIndex + 1].NormalizeValue(line.Values[segmentIndex + 1]) * availableHeight;
+            double normalizedValue1 = line.NormalizedValues != null && line.NormalizedValues.Length > segmentIndex + 1
+                ? line.NormalizedValues[segmentIndex + 1]
+                : Dimensions[segmentIndex + 1].NormalizeValue(line.Values[segmentIndex + 1]);
+            double y1 = plotBottom - normalizedValue1 * availableHeight;
             ScreenPoint endPoint = new ScreenPoint(x1, y1);
 
             // バウンディングボックスによる早期終了チェック
