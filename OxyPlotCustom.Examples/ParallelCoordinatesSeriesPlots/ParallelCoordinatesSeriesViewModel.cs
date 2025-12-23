@@ -23,12 +23,27 @@ namespace OxyPlotCustom.Examples.ParallelCoordinatesSeriesPlots
         public ReactiveProperty<bool> IsEditMode { get; }
 
         /// <summary>
+        /// 編集モード時の既存プロットの透明度（0.0～1.0、デフォルトは0.3）
+        /// </summary>
+        public ReactiveProperty<double> EditModeOpacity { get; }
+
+        /// <summary>
+        /// 編集モード時の既存プロットの色の薄さ（0.0=元の色、1.0=白、デフォルトは0.7）
+        /// </summary>
+        public ReactiveProperty<double> EditModeLightness { get; }
+
+        /// <summary>
         /// カラーマップを表示するかどうか
         /// </summary>
         public ReactiveProperty<bool> ShowColorMap { get; }
 
         private ParallelCoordinatesSeries? Series { get; set; }
         private PointAdditionHandler? PointAdditionHandler { get; set; }
+
+        /// <summary>
+        /// ラインの元の色を保持するディクショナリ（編集モード解除時に元に戻すため）
+        /// </summary>
+        private Dictionary<string, OxyColor> _originalLineColors = [];
 
         public ParallelCoordinatesSeriesViewModel()
         {
@@ -59,12 +74,14 @@ namespace OxyPlotCustom.Examples.ParallelCoordinatesSeriesPlots
 
             // 編集モードのプロパティを初期化
             IsEditMode = new ReactiveProperty<bool>(false);
+            EditModeOpacity = new ReactiveProperty<double>(0.3);
+            EditModeLightness = new ReactiveProperty<double>(0.7);
+
             IsEditMode.Subscribe(isEditMode =>
             {
                 if (PointAdditionHandler != null && Series != null)
                 {
                     PointAdditionHandler.IsEditMode = isEditMode;
-                    Series.IsEditMode = isEditMode;
                     if (isEditMode)
                     {
                         // 編集モードを有効にしたときにハイライトをクリア
@@ -72,11 +89,15 @@ namespace OxyPlotCustom.Examples.ParallelCoordinatesSeriesPlots
                         {
                             Series.HighlightedLineId = null;
                         }
+                        // 既存のラインの色を調整（透明度と薄さを適用）
+                        ApplyEditModeToLines();
                     }
                     else
                     {
                         // 編集モードを無効にしたときにリセット
                         PointAdditionHandler.ResetEditMode();
+                        // ラインの色を元に戻す
+                        RestoreOriginalLineColors();
                     }
                     PlotModel?.InvalidatePlot(false);
                 }
@@ -196,7 +217,7 @@ namespace OxyPlotCustom.Examples.ParallelCoordinatesSeriesPlots
             }
 
             // 編集モード時はハイライト処理をスキップ
-            if (Series.IsEditMode)
+            if (IsEditMode.Value)
             {
                 // ハイライトをクリア
                 if (Series.HighlightedLineId != null)
@@ -233,7 +254,7 @@ namespace OxyPlotCustom.Examples.ParallelCoordinatesSeriesPlots
             }
 
             // 編集モード時はハイライト処理をスキップ
-            if (Series.IsEditMode)
+            if (IsEditMode.Value)
             {
                 return;
             }
@@ -288,6 +309,67 @@ namespace OxyPlotCustom.Examples.ParallelCoordinatesSeriesPlots
                     return;
                 }
             }
+        }
+
+        /// <summary>
+        /// 編集モード時に既存のラインの色に透明度と薄さを適用します
+        /// </summary>
+        private void ApplyEditModeToLines()
+        {
+            if (Series == null || !Series.HasLines)
+            {
+                return;
+            }
+
+            _originalLineColors.Clear();
+            double opacity = EditModeOpacity.Value;
+            double lightness = EditModeLightness.Value;
+
+            foreach (var line in Series.Lines)
+            {
+                // 元の色を保存
+                _originalLineColors[line.Id] = line.Color;
+
+                // 透明度と薄さを適用
+                line.Color = ApplyOpacityAndLightness(line.Color, opacity, lightness);
+            }
+        }
+
+        /// <summary>
+        /// 編集モード解除時にラインの色を元に戻します
+        /// </summary>
+        private void RestoreOriginalLineColors()
+        {
+            if (Series == null || !Series.HasLines)
+            {
+                return;
+            }
+
+            foreach (var line in Series.Lines)
+            {
+                if (_originalLineColors.TryGetValue(line.Id, out OxyColor originalColor))
+                {
+                    line.Color = originalColor;
+                }
+            }
+
+            _originalLineColors.Clear();
+        }
+
+        /// <summary>
+        /// 色に透明度と明度を適用します
+        /// </summary>
+        /// <param name="color">元の色</param>
+        /// <param name="opacity">透明度（0.0～1.0）</param>
+        /// <param name="lightness">色の薄さ（0.0=元の色、1.0=白）</param>
+        /// <returns>透明度と薄さが適用された色</returns>
+        private static OxyColor ApplyOpacityAndLightness(OxyColor color, double opacity, double lightness)
+        {
+            byte alpha = (byte)(255 * opacity);
+            byte r = (byte)(color.R * (1 - lightness) + 255 * lightness);
+            byte g = (byte)(color.G * (1 - lightness) + 255 * lightness);
+            byte b = (byte)(color.B * (1 - lightness) + 255 * lightness);
+            return OxyColor.FromArgb(alpha, r, g, b);
         }
     }
 }

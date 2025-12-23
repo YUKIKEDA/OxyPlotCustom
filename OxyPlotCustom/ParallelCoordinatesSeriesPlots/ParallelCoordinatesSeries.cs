@@ -228,27 +228,6 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
 
         #endregion
 
-        #region Edit Mode
-
-        // TODO ここに編集モードのプロパティを追加するのはおかしい。
-
-        /// <summary>
-        /// 編集モードが有効かどうか（編集モード時は既存のプロットに透明度を適用）
-        /// </summary>
-        public bool IsEditMode { get; set; } = false;
-
-        /// <summary>
-        /// 編集モード時の既存プロットの透明度（0.0～1.0、デフォルトは0.3）
-        /// </summary>
-        public double EditModeOpacity { get; set; } = 0.3;
-
-        /// <summary>
-        /// 編集モード時の既存プロットの色の薄さ（0.0=元の色、1.0=白、デフォルトは0.7）
-        /// </summary>
-        public double EditModeLightness { get; set; } = 0.7;
-
-        #endregion
-
         #region Filtered Line Appearance
 
         /// <summary>
@@ -643,11 +622,6 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
                 if (isFiltered)
                 {
                     color = ApplyOpacityAndLightness(color, FilteredLineOpacity, FilteredLineLightness);
-                }
-                // 編集モード時で、ハイライトされていないラインには透明度を適用
-                else if (IsEditMode && !isHighlighted)
-                {
-                    color = ApplyOpacityAndLightness(color, EditModeOpacity, EditModeLightness);
                 }
                 
                 var thickness = isHighlighted ? HighlightStrokeThickness : line.StrokeThickness;
