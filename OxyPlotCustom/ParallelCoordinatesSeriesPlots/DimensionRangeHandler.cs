@@ -7,6 +7,8 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
     /// </summary>
     public class DimensionRangeHandler : IParallelCoordinatesInteractionHandler
     {
+        // TODO 上のツマミと下のツマミの色を変える
+        
         /// <summary>
         /// ハンドラーが有効かどうか
         /// </summary>

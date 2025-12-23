@@ -37,16 +37,6 @@ namespace OxyPlotCustom.Examples.ParallelCoordinatesSeriesPlots
         /// </summary>
         public ReactiveProperty<bool> ShowColorMap { get; }
 
-        /// <summary>
-        /// ハイライトされているラインのID（nullの場合はハイライトなし）
-        /// </summary>
-        private string? _highlightedLineId;
-
-        /// <summary>
-        /// ハイライト時のラインの太さ（デフォルトは3.0）
-        /// </summary>
-        public ReactiveProperty<double> HighlightStrokeThickness { get; }
-
         private ParallelCoordinatesSeries? Series { get; set; }
         private PointAdditionHandler? PointAdditionHandler { get; set; }
 
@@ -54,11 +44,6 @@ namespace OxyPlotCustom.Examples.ParallelCoordinatesSeriesPlots
         /// ラインの元の色を保持するディクショナリ（編集モード解除時に元に戻すため）
         /// </summary>
         private Dictionary<string, OxyColor> _originalLineColors = [];
-
-        /// <summary>
-        /// ラインの元の太さを保持するディクショナリ（ハイライト解除時に元に戻すため）
-        /// </summary>
-        private Dictionary<string, double> _originalLineThicknesses = [];
 
         public ParallelCoordinatesSeriesViewModel()
         {
@@ -92,9 +77,6 @@ namespace OxyPlotCustom.Examples.ParallelCoordinatesSeriesPlots
             EditModeOpacity = new ReactiveProperty<double>(0.3);
             EditModeLightness = new ReactiveProperty<double>(0.7);
 
-            // ハイライトのプロパティを初期化
-            HighlightStrokeThickness = new ReactiveProperty<double>(4.0);
-
             IsEditMode.Subscribe(isEditMode =>
             {
                 if (PointAdditionHandler != null && Series != null)
@@ -102,11 +84,6 @@ namespace OxyPlotCustom.Examples.ParallelCoordinatesSeriesPlots
                     PointAdditionHandler.IsEditMode = isEditMode;
                     if (isEditMode)
                     {
-                        // 編集モードを有効にしたときにハイライトをクリア
-                        if (_highlightedLineId != null)
-                        {
-                            ClearHighlight();
-                        }
                         // 既存のラインの色を調整（透明度と薄さを適用）
                         ApplyEditModeToLines();
                     }
@@ -213,7 +190,7 @@ namespace OxyPlotCustom.Examples.ParallelCoordinatesSeriesPlots
         }
 
         /// <summary>
-        /// マウス移動時のハイライト処理
+        /// マウス移動時の処理
         /// </summary>
         /// <param name="screenPoint">マウス位置のスクリーン座標</param>
         private void OnMouseMove(ScreenPoint screenPoint)
@@ -224,65 +201,22 @@ namespace OxyPlotCustom.Examples.ParallelCoordinatesSeriesPlots
             }
 
             // インタラクションハンドラーで処理（ドラッグなど）
-            bool handled = false;
             foreach (var handler in Series.InteractionHandlers)
             {
                 if (handler.IsEnabled && handler.HandleMouseMove(Series, screenPoint))
                 {
-                    handled = true;
+                    PlotModel.InvalidatePlot(false);
                     break;
-                }
-            }
-
-            // 編集モード時はハイライト処理をスキップ
-            if (IsEditMode.Value)
-            {
-                // ハイライトをクリア
-                if (_highlightedLineId != null)
-                {
-                    ClearHighlight();
-                    PlotModel.InvalidatePlot(false);
-                }
-                return;
-            }
-
-            // ハンドラーで処理されなかった場合のみハイライト処理
-            if (!handled)
-            {
-                // 最も近いラインを取得
-                var nearestLineId = Series.GetNearestLineId(screenPoint);
-
-                // ハイライトを更新
-                if (_highlightedLineId != nearestLineId)
-                {
-                    SetHighlight(nearestLineId);
-                    PlotModel.InvalidatePlot(false);
                 }
             }
         }
 
         /// <summary>
-        /// マウスが離れたときのハイライト解除処理
+        /// マウスが離れたときの処理
         /// </summary>
         private void OnMouseLeave()
         {
-            if (Series == null || PlotModel == null)
-            {
-                return;
-            }
-
-            // 編集モード時はハイライト処理をスキップ
-            if (IsEditMode.Value)
-            {
-                return;
-            }
-
-            // ハイライトを解除
-            if (_highlightedLineId != null)
-            {
-                ClearHighlight();
-                PlotModel.InvalidatePlot(false);
-            }
+            
         }
 
         /// <summary>
@@ -390,80 +324,5 @@ namespace OxyPlotCustom.Examples.ParallelCoordinatesSeriesPlots
             return OxyColor.FromArgb(alpha, r, g, b);
         }
 
-        /// <summary>
-        /// 指定されたラインIDのラインをハイライトします
-        /// </summary>
-        /// <param name="lineId">ハイライトするラインのID（nullの場合はハイライト解除）</param>
-        private void SetHighlight(string? lineId)
-        {
-            if (Series == null || !Series.HasLines)
-            {
-                return;
-            }
-
-            // 既存のハイライトをクリア
-            ClearHighlight();
-
-            if (string.IsNullOrEmpty(lineId))
-            {
-                return;
-            }
-
-            // ハイライトするラインを検索
-            ParallelCoordinatesLine? lineToHighlight = null;
-            foreach (var line in Series.Lines)
-            {
-                if (line.Id == lineId)
-                {
-                    lineToHighlight = line;
-                    break;
-                }
-            }
-
-            if (lineToHighlight == null)
-            {
-                return;
-            }
-
-            // 元の太さを保存
-            _originalLineThicknesses[lineId] = lineToHighlight.StrokeThickness;
-
-            // ハイライト時の太さを適用
-            lineToHighlight.StrokeThickness = HighlightStrokeThickness.Value;
-
-            _highlightedLineId = lineId;
-        }
-
-        /// <summary>
-        /// ハイライトを解除します
-        /// </summary>
-        private void ClearHighlight()
-        {
-            if (Series == null || !Series.HasLines || string.IsNullOrEmpty(_highlightedLineId))
-            {
-                _highlightedLineId = null;
-                return;
-            }
-
-            // ハイライトされているラインを検索
-            ParallelCoordinatesLine? highlightedLine = null;
-            foreach (var line in Series.Lines)
-            {
-                if (line.Id == _highlightedLineId)
-                {
-                    highlightedLine = line;
-                    break;
-                }
-            }
-
-            if (highlightedLine != null && _originalLineThicknesses.TryGetValue(_highlightedLineId, out double originalThickness))
-            {
-                // 元の太さに戻す
-                highlightedLine.StrokeThickness = originalThickness;
-                _originalLineThicknesses.Remove(_highlightedLineId);
-            }
-
-            _highlightedLineId = null;
-        }
     }
 }
