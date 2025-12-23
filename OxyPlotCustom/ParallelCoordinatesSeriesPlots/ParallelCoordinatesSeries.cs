@@ -54,7 +54,7 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
         /// <summary>
         /// プロットエリアの左右の余白（ピクセル）
         /// </summary>
-        public double HorizontalMargin { get; set; } = 40.0;
+        public double HorizontalMargin { get; set; } = 60.0;
 
         #endregion
 
