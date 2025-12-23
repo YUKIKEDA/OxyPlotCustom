@@ -211,6 +211,25 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
         /// </summary>
         public double EditModeOpacity { get; set; } = 0.3;
 
+        /// <summary>
+        /// 編集モード時の既存プロットの色の薄さ（0.0=元の色、1.0=白、デフォルトは0.7）
+        /// </summary>
+        public double EditModeLightness { get; set; } = 0.7;
+
+        #endregion
+
+        #region Filtered Line Appearance
+
+        /// <summary>
+        /// フィルタ外のラインの透明度（0.0～1.0、デフォルトは0.1）
+        /// </summary>
+        public double FilteredLineOpacity { get; set; } = 0.1;
+
+        /// <summary>
+        /// フィルタ外のラインの色の薄さ（0.0=元の色、1.0=白、デフォルトは0.7）
+        /// </summary>
+        public double FilteredLineLightness { get; set; } = 0.7;
+
         #endregion
 
         public ParallelCoordinatesSeries(IEnumerable<ParallelCoordinatesDimension> dimensions)
@@ -570,15 +589,12 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
                 // フィルタ外の場合は透明度を適用
                 if (isFiltered)
                 {
-                    // 透明度設定
-                    byte alpha = (byte)(255 * 0.1);
-                    color = OxyColor.FromArgb(alpha, color.R, color.G, color.B);
+                    color = ApplyOpacityAndLightness(color, FilteredLineOpacity, FilteredLineLightness);
                 }
                 // 編集モード時で、ハイライトされていないラインには透明度を適用
                 else if (IsEditMode && !isHighlighted)
                 {
-                    byte alpha = (byte)(255 * EditModeOpacity);
-                    color = OxyColor.FromArgb(alpha, color.R, color.G, color.B);
+                    color = ApplyOpacityAndLightness(color, EditModeOpacity, EditModeLightness);
                 }
                 
                 var thickness = isHighlighted ? HighlightStrokeThickness : line.StrokeThickness;
@@ -590,6 +606,22 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
                     EdgeRenderingMode.Automatic
                 );
             }
+        }
+
+        /// <summary>
+        /// 色に透明度と明度を適用します
+        /// </summary>
+        /// <param name="color">元の色</param>
+        /// <param name="opacity">透明度（0.0～1.0）</param>
+        /// <param name="lightness">色の薄さ（0.0=元の色、1.0=白）</param>
+        /// <returns>透明度と薄さが適用された色</returns>
+        private static OxyColor ApplyOpacityAndLightness(OxyColor color, double opacity, double lightness)
+        {
+            byte alpha = (byte)(255 * opacity);
+            byte r = (byte)(color.R * (1 - lightness) + 255 * lightness);
+            byte g = (byte)(color.G * (1 - lightness) + 255 * lightness);
+            byte b = (byte)(color.B * (1 - lightness) + 255 * lightness);
+            return OxyColor.FromArgb(alpha, r, g, b);
         }
 
         /// <summary>
@@ -688,7 +720,13 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
 
                 // 各色のセグメントを描画
                 var rect = new OxyRect(colorMapLeft, yTop, ColorMapWidth, yBottom - yTop);
-                rc.DrawRectangle(rect, ColorMap.Colors[i], OxyColors.Undefined, 0, EdgeRenderingMode.Automatic);
+                rc.DrawRectangle(
+                    rect, 
+                    ColorMap.Colors[i], 
+                    OxyColors.Undefined,
+                    0, 
+                    EdgeRenderingMode.Automatic
+                );
             }
 
             // カラーマップの枠線を描画
