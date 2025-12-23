@@ -10,6 +10,11 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
     public class ParallelCoordinatesSeries : ItemsSeries
     {
         /// <summary>
+        /// 描画時の座標点を格納する再利用可能なバッファ（GC負荷を削減するため）
+        /// </summary>
+        private readonly List<ScreenPoint> _renderPointsBuffer = [];
+
+        /// <summary>
         /// 次元（軸）の配列（順序は入力の順を保持）
         /// </summary>
         public ParallelCoordinatesDimension[] Dimensions { get; }
@@ -558,8 +563,8 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
             double availableHeight = GetAvailableHeight();
             double plotBottom = GetAxisBottomPosition();
 
-            // 各軸での座標点を計算
-            var points = new List<ScreenPoint>();
+            // 各軸での座標点を計算（再利用可能なバッファを使用）
+            _renderPointsBuffer.Clear();
             for (int i = 0; i < Dimensions.Length; i++)
             {
                 var dimension = Dimensions[i];
@@ -577,11 +582,11 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
                 // 正規化された値をY座標に変換（下から上に向かって配置）
                 double y = plotBottom - normalizedValue * availableHeight;
 
-                points.Add(new ScreenPoint(x, y));
+                _renderPointsBuffer.Add(new ScreenPoint(x, y));
             }
 
             // 点が2つ以上ある場合のみ線を描画
-            if (points.Count >= 2)
+            if (_renderPointsBuffer.Count >= 2)
             {
                 // ハイライト時の色と太さを決定
                 var color = line.Color;
@@ -600,7 +605,7 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
                 var thickness = isHighlighted ? HighlightStrokeThickness : line.StrokeThickness;
 
                 rc.DrawLine(
-                    points,
+                    _renderPointsBuffer,
                     color,
                     thickness,
                     EdgeRenderingMode.Automatic
