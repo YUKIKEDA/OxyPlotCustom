@@ -20,6 +20,11 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
         public Dictionary<string, ParallelCoordinatesLine> Lines { get; } = [];
 
         /// <summary>
+        /// インタラクションハンドラーのリスト
+        /// </summary>
+        public List<IParallelCoordinatesInteractionHandler> InteractionHandlers { get; set; }
+
+        /// <summary>
         /// プロットエリアの上下の余白（ピクセル）
         /// </summary>
         public double VerticalMargin { get; set; }
@@ -140,6 +145,8 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
         {
             Dimensions = dimensions;
             Lines = CreateLinesFromDimensions(dimensions, dimensions.Keys);
+
+            InteractionHandlers = new List<IParallelCoordinatesInteractionHandler>();
 
             #region Default Appearance
 
@@ -279,6 +286,15 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
 
             RenderAxes(rc);
             RenderDataLines(rc);
+
+            // インタラクションハンドラーで定義された描画の追加処理
+            foreach (var handler in InteractionHandlers)
+            {
+                if (handler.IsEnabled)
+                {
+                    handler.Render(this, rc);
+                }
+            }
         }
 
         #endregion
@@ -452,6 +468,9 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
                 return;
             }
 
+            // フィルタリング：すべての次元で範囲内かどうかをチェック
+            bool isFiltered = IsLineFiltered(line);
+
             // 利用可能な高さを取得
             double availableHeight = GetAvailableHeight();
             double plotBottom = GetAxisBottomPosition();
@@ -468,7 +487,8 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
                 // ラインの値を取得
                 double value = line.Values[i];
 
-                // 値を正規化
+                // 値を元のRange（MinValue～MaxValue）に基づいて正規化
+                // 目盛りは常に元の範囲を表示するため、ラインも同じ範囲で計算
                 double normalizedValue = (value - dimension.MinValue) / (dimension.MaxValue - dimension.MinValue);
                 
                 // 正規化された値をY座標に変換（下から上に向かって配置）
@@ -482,6 +502,15 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
             {
                 // ハイライト時の色と太さを決定
                 var color = line.Color;
+                
+                // フィルタ外の場合は透明度を適用
+                if (isFiltered)
+                {
+                    // 透明度設定
+                    byte alpha = (byte)(255 * 0.1);
+                    color = OxyColor.FromArgb(alpha, color.R, color.G, color.B);
+                }
+                
                 var thickness = isHighlighted ? HighlightStrokeThickness : line.StrokeThickness;
 
                 rc.DrawLine(
@@ -491,6 +520,34 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
                     EdgeRenderingMode.Automatic
                 );
             }
+        }
+
+        /// <summary>
+        /// ラインがフィルタリング条件を満たしているかどうかを判定します
+        /// </summary>
+        /// <param name="line">判定するライン</param>
+        /// <returns>フィルタ外（範囲外）の場合はtrue、範囲内の場合はfalse</returns>
+        private bool IsLineFiltered(ParallelCoordinatesLine line)
+        {
+            if (line.Values.Length != Dimensions.Count)
+            {
+                return true;
+            }
+
+            // すべての次元で範囲内かどうかをチェック
+            for (int i = 0; i < Dimensions.Count; i++)
+            {
+                var dimension = Dimensions.ElementAt(i).Value;
+                double value = line.Values[i];
+
+                // DisplayMinValueとDisplayMaxValueの範囲外の場合はフィルタ外
+                if (value < dimension.DisplayMinValue || value > dimension.DisplayMaxValue)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         #endregion
@@ -703,15 +760,35 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
 
         #endregion
 
-        #region Private Shared Methods
+        #region Public Helper Methods
 
-        private double GetAxisTopPosition() => PlotModel.PlotArea.Top + VerticalMargin;
-        private double GetAxisBottomPosition() => PlotModel.PlotArea.Bottom - VerticalMargin;
-        private double GetAvailableWidth() => PlotModel.PlotArea.Width - 2 * HorizontalMargin;
-        private double GetAxisXPosition(int axisIndex)
+        /// <summary>
+        /// 軸の上端位置を取得します
+        /// </summary>
+        public double GetAxisTopPosition() => PlotModel.PlotArea.Top + VerticalMargin;
+
+        /// <summary>
+        /// 軸の下端位置を取得します
+        /// </summary>
+        public double GetAxisBottomPosition() => PlotModel.PlotArea.Bottom - VerticalMargin;
+
+        /// <summary>
+        /// 利用可能な幅を取得します
+        /// </summary>
+        public double GetAvailableWidth() => PlotModel.PlotArea.Width - 2 * HorizontalMargin;
+
+        /// <summary>
+        /// 軸のX座標を取得します
+        /// </summary>
+        /// <param name="axisIndex">軸のインデックス</param>
+        /// <returns>軸のX座標</returns>
+        public double GetAxisXPosition(int axisIndex)
             => PlotModel.PlotArea.Left + HorizontalMargin + GetAvailableWidth() * axisIndex / (Dimensions.Count - 1);
 
-        private double GetAvailableHeight() => PlotModel.PlotArea.Height - 2 * VerticalMargin;
+        /// <summary>
+        /// 利用可能な高さを取得します
+        /// </summary>
+        public double GetAvailableHeight() => PlotModel.PlotArea.Height - 2 * VerticalMargin;
 
         #endregion
     }

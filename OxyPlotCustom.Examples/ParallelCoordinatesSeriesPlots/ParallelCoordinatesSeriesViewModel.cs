@@ -32,6 +32,10 @@ namespace OxyPlotCustom.Examples.ParallelCoordinatesSeriesPlots
             Series.ColorMapDimensionName = "Physical";
             Series.ColorMap = OxyPalettes.Jet(256);
             
+            // 範囲調整ハンドラーを追加
+            var rangeHandler = new DimensionRangeHandler();
+            Series.InteractionHandlers.Add(rangeHandler);
+            
             PlotModel.Series.Add(Series);
 
             // コマンドを初期化
@@ -101,14 +105,29 @@ namespace OxyPlotCustom.Examples.ParallelCoordinatesSeriesPlots
                 return;
             }
 
-            // 最も近いラインを取得
-            var nearestLineId = Series.GetNearestLineId(screenPoint);
-
-            // ハイライトを更新
-            if (Series.HighlightedLineId != nearestLineId)
+            // インタラクションハンドラーで処理（ドラッグなど）
+            bool handled = false;
+            foreach (var handler in Series.InteractionHandlers)
             {
-                Series.HighlightedLineId = nearestLineId;
-                PlotModel.InvalidatePlot(false);
+                if (handler.IsEnabled && handler.HandleMouseMove(Series, screenPoint))
+                {
+                    handled = true;
+                    break;
+                }
+            }
+
+            // ハンドラーで処理されなかった場合のみハイライト処理
+            if (!handled)
+            {
+                // 最も近いラインを取得
+                var nearestLineId = Series.GetNearestLineId(screenPoint);
+
+                // ハイライトを更新
+                if (Series.HighlightedLineId != nearestLineId)
+                {
+                    Series.HighlightedLineId = nearestLineId;
+                    PlotModel.InvalidatePlot(false);
+                }
             }
         }
 
@@ -136,7 +155,20 @@ namespace OxyPlotCustom.Examples.ParallelCoordinatesSeriesPlots
         /// <param name="screenPoint">マウス位置のスクリーン座標</param>
         private void OnMouseDown(ScreenPoint screenPoint)
         {
-            // 必要に応じて実装
+            if (Series == null || PlotModel == null)
+            {
+                return;
+            }
+
+            // インタラクションハンドラーで処理
+            foreach (var handler in Series.InteractionHandlers)
+            {
+                if (handler.IsEnabled && handler.HandleMouseDown(Series, screenPoint))
+                {
+                    PlotModel.InvalidatePlot(false);
+                    return;
+                }
+            }
         }
 
         /// <summary>
@@ -145,7 +177,20 @@ namespace OxyPlotCustom.Examples.ParallelCoordinatesSeriesPlots
         /// <param name="screenPoint">マウス位置のスクリーン座標</param>
         private void OnMouseUp(ScreenPoint screenPoint)
         {
-            // 必要に応じて実装
+            if (Series == null || PlotModel == null)
+            {
+                return;
+            }
+
+            // インタラクションハンドラーで処理
+            foreach (var handler in Series.InteractionHandlers)
+            {
+                if (handler.IsEnabled && handler.HandleMouseUp(Series, screenPoint))
+                {
+                    PlotModel.InvalidatePlot(false);
+                    return;
+                }
+            }
         }
     }
 }
