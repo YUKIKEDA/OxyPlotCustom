@@ -134,15 +134,41 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
 
         #region ColorMap
 
+        private string? _colorMapDimensionName;
+
         /// <summary>
         /// カラーマップに使用する軸の名前（nullの場合はカラーマップを使用しない）
         /// </summary>
-        public string? ColorMapDimensionName { get; set; }
+        public string? ColorMapDimensionName
+        {
+            get => _colorMapDimensionName;
+            set
+            {
+                if (_colorMapDimensionName != value)
+                {
+                    _colorMapDimensionName = value;
+                    UpdateLineColorsFromColorMap();
+                }
+            }
+        }
+
+        private OxyPalette _colorMap = OxyPalettes.Jet(256);
 
         /// <summary>
         /// カラーマップのパレット
         /// </summary>
-        public OxyPalette ColorMap { get; set; } = OxyPalettes.Jet(256);
+        public OxyPalette ColorMap
+        {
+            get => _colorMap;
+            set
+            {
+                if (_colorMap != value)
+                {
+                    _colorMap = value;
+                    UpdateLineColorsFromColorMap();
+                }
+            }
+        }
 
         /// <summary>
         /// カラーマップを表示するかどうか
@@ -244,6 +270,9 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
             Lines = CreateLinesFromDimensions(Dimensions);
 
             InteractionHandlers = new List<IParallelCoordinatesInteractionHandler>();
+
+            // 初期化時にカラーマップから色を設定
+            UpdateLineColorsFromColorMap();
         }
 
         #region Initialization
@@ -326,9 +355,6 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
             {
                 return;
             }
-
-            // ラインの色をカラーマップから取得して設定
-            UpdateLineColorsFromColorMap();
 
             RenderDataLines(rc);
             RenderAxes(rc);
