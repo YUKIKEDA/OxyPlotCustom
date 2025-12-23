@@ -6,9 +6,7 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
     /// 編集モードで点を追加して一時的なラインを作成するハンドラー
     /// </summary>
     public class PointAdditionHandler : IParallelCoordinatesInteractionHandler
-    {
-        // TODO シングルクリックでハンドルを動かせるようにしたい
-        
+    {       
         /// <summary>
         /// ハンドラーが有効かどうか
         /// </summary>

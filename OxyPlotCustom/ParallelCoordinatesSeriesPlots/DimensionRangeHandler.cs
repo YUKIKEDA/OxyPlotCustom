@@ -8,7 +8,6 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
     public class DimensionRangeHandler : IParallelCoordinatesInteractionHandler
     {
         // TODO 上のツマミと下のツマミの色を変える
-        // TODO シングルクリックでハンドルを動かせるようにしたい
         
         /// <summary>
         /// ハンドラーが有効かどうか
