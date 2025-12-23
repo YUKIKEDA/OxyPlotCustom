@@ -432,14 +432,36 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
                 // 目盛りラベル
                 rc.DrawText(
                     new ScreenPoint(x + AxisTickLabelHorizontalOffset, tickYPosition),
-                    value.ToString("F1"),
+                    FormatTickLabel(value),
                     AxisTickLabelColor,
-                    fontSize: AxisLabelFontSize,
+                    fontSize: AxisTickLabelFontSize,
                     fontWeight: FontWeights.Normal,
                     rotation: 0,
                     horizontalAlignment: HorizontalAlignment.Left,
                     verticalAlignment: VerticalAlignment.Middle
                 );
+            }
+        }
+
+        /// <summary>
+        /// 数値の大きさに応じて適切なフォーマットを選択して文字列に変換
+        /// 大きな数値や小さな数値は指数表記を使用し、それ以外は固定小数点表記を使用
+        /// </summary>
+        /// <param name="value">フォーマットする数値</param>
+        /// <returns>フォーマットされた文字列</returns>
+        private static string FormatTickLabel(double value)
+        {
+            double absValue = Math.Abs(value);
+            
+            // 絶対値が1000以上または0.001未満の場合は指数表記を使用
+            if (absValue >= 1000.0 || (absValue > 0.0 && absValue < 0.001))
+            {
+                return value.ToString("G2");
+            }
+            else
+            {
+                // それ以外は固定小数点表記（小数点以下1桁）
+                return value.ToString("F1");
             }
         }
 
