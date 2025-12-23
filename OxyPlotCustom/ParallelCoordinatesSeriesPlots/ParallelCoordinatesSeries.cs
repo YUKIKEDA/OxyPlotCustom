@@ -860,16 +860,12 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
                 }
 
                 // 平方距離で比較して平方根計算を削減
-                double distance = GetDistanceToLine(point, line, minDistanceSquared);
+                double distanceSquared = GetDistanceToLine(point, line);
                 
-                if (distance != double.MaxValue)
+                if (distanceSquared < minDistanceSquared && distanceSquared <= toleranceSquared)
                 {
-                    double distanceSquared = distance * distance;
-                    if (distanceSquared < minDistanceSquared && distanceSquared <= toleranceSquared)
-                    {
-                        minDistanceSquared = distanceSquared;
-                        nearestLineId = line.Id;
-                    }
+                    minDistanceSquared = distanceSquared;
+                    nearestLineId = line.Id;
                 }
             }
 
@@ -877,15 +873,15 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
         }
 
         /// <summary>
-        /// 指定したポイントからラインまでの最短距離を計算します
+        /// 指定したポイントからラインまでの最短距離の2乗を計算します（平方根計算を避けるため）
+        /// ラインを構成する全てのセグメントをチェックし、最も近いセグメントまでの距離の2乗を返します。
         /// </summary>
         /// <param name="point">スクリーン座標</param>
         /// <param name="line">ライン</param>
-        /// <param name="currentMinDistanceSquared">現在の最小距離の2乗（早期終了用、負の場合は無視）</param>
-        /// <returns>ポイントからラインまでの距離（ピクセル）。currentMinDistanceSquaredが指定され、それより大きい場合はdouble.MaxValue</returns>
-        private double GetDistanceToLine(ScreenPoint point, ParallelCoordinatesLine line, double currentMinDistanceSquared = -1)
+        /// <returns>ポイントからラインまでの距離の2乗（ピクセル^2）。無効な場合はdouble.MaxValue</returns>
+        private double GetDistanceToLine(ScreenPoint point, ParallelCoordinatesLine line)
         {
-            if (line.Values.Length != Dimensions.Length)
+            if (line.Values.Length != Dimensions.Length || Dimensions.Length < 2)
             {
                 return double.MaxValue;
             }
@@ -894,51 +890,33 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
             double availableHeight = GetAvailableHeight();
             double plotBottom = GetAxisBottomPosition();
 
-            // 各軸での座標点を計算（配列を使用してGC負荷を削減）
-            int dimensionCount = Dimensions.Length;
-            if (dimensionCount < 2)
-            {
-                return double.MaxValue;
-            }
-
             // 各セグメントに対する距離を計算し、最小値を返す
             // 平方距離で比較して平方根計算を削減
             double minDistanceSquared = double.MaxValue;
             
-            // 前のポイントを保持して配列割り当てを回避
-            ScreenPoint? prevPoint = null;
-            int dimensionIndex = 0;
-            
-            foreach (var dimension in Dimensions)
+            // 最初の点（第0軸）を計算
+            double x0 = GetAxisXPosition(0);
+            double y0 = plotBottom - Dimensions[0].NormalizeValue(line.Values[0]) * availableHeight;
+            ScreenPoint prevPoint = new ScreenPoint(x0, y0);
+
+            // 第1軸以降のセグメントをチェック
+            for (int i = 1; i < Dimensions.Length; i++)
             {
-                double x = GetAxisXPosition(dimensionIndex);
-                double value = line.Values[dimensionIndex];
-                double normalizedValue = dimension.NormalizeValue(value);
-                double y = plotBottom - normalizedValue * availableHeight;
+                double x1 = GetAxisXPosition(i);
+                double y1 = plotBottom - Dimensions[i].NormalizeValue(line.Values[i]) * availableHeight;
+                ScreenPoint currentPoint = new ScreenPoint(x1, y1);
+
+                double distanceSquared = GetDistanceSquaredToLineSegment(point, prevPoint, currentPoint);
                 
-                var currentPoint = new ScreenPoint(x, y);
-                
-                if (prevPoint.HasValue)
+                if (distanceSquared < minDistanceSquared)
                 {
-                    double distanceSquared = GetDistanceSquaredToLineSegment(point, prevPoint.Value, currentPoint);
-                    
-                    // 早期終了：既に現在の最小距離より大きい場合
-                    if (currentMinDistanceSquared > 0 && distanceSquared >= currentMinDistanceSquared)
-                    {
-                        return double.MaxValue;
-                    }
-                    
-                    if (distanceSquared < minDistanceSquared)
-                    {
-                        minDistanceSquared = distanceSquared;
-                    }
+                    minDistanceSquared = distanceSquared;
                 }
                 
                 prevPoint = currentPoint;
-                dimensionIndex++;
             }
 
-            return Math.Sqrt(minDistanceSquared);
+            return minDistanceSquared;
         }
 
         /// <summary>
