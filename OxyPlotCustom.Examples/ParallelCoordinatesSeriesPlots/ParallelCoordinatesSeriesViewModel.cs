@@ -18,6 +18,11 @@ namespace OxyPlotCustom.Examples.ParallelCoordinatesSeriesPlots
         /// </summary>
         public ReactiveProperty<bool> IsEditMode { get; }
 
+        /// <summary>
+        /// カラーマップを表示するかどうか
+        /// </summary>
+        public ReactiveProperty<bool> ShowColorMap { get; }
+
         private ParallelCoordinatesSeries? Series { get; set; }
         private PointAdditionHandler? PointAdditionHandler { get; set; }
 
@@ -69,6 +74,17 @@ namespace OxyPlotCustom.Examples.ParallelCoordinatesSeriesPlots
                         // 編集モードを無効にしたときにリセット
                         PointAdditionHandler.ResetEditMode();
                     }
+                    PlotModel?.InvalidatePlot(false);
+                }
+            });
+
+            // カラーマップ表示のプロパティを初期化
+            ShowColorMap = new ReactiveProperty<bool>(false);
+            ShowColorMap.Subscribe(showColorMap =>
+            {
+                if (Series != null)
+                {
+                    Series.ShowColorMap = showColorMap;
                     PlotModel?.InvalidatePlot(false);
                 }
             });

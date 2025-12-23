@@ -21,6 +21,8 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
                 <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
             <Border Grid.Column="0">
@@ -35,6 +37,20 @@
                     Height="30"
                     Margin="5"
                     IsChecked="{Binding IsEditMode.Value}" />
+            </Border>
+            <Border Grid.Column="2">
+                <TextBlock
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Center"
+                    Margin="10,0,0,0"
+                    Text="カラーマップ表示" />
+            </Border>
+            <Border Grid.Column="3">
+                <ToggleButton
+                    Width="80"
+                    Height="30"
+                    Margin="5"
+                    IsChecked="{Binding ShowColorMap.Value}" />
             </Border>
         </Grid>
 

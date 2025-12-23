@@ -120,6 +120,41 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
         /// </summary>
         public OxyPalette ColorMap { get; set; }
 
+        /// <summary>
+        /// カラーマップを表示するかどうか
+        /// </summary>
+        public bool ShowColorMap { get; set; }
+
+        /// <summary>
+        /// カラーマップの幅（ピクセル）
+        /// </summary>
+        public double ColorMapWidth { get; set; }
+
+        /// <summary>
+        /// カラーマップと軸の間の余白（ピクセル）
+        /// </summary>
+        public double ColorMapMargin { get; set; }
+
+        /// <summary>
+        /// カラーマップのラベルのフォントサイズ
+        /// </summary>
+        public double ColorMapLabelFontSize { get; set; }
+
+        /// <summary>
+        /// カラーマップのラベルのフォントカラー
+        /// </summary>
+        public OxyColor ColorMapLabelFontColor { get; set; }
+
+        /// <summary>
+        /// カラーマップの目盛り数
+        /// </summary>
+        public int ColorMapTickCount { get; set; }
+
+        /// <summary>
+        /// カラーマップの目盛りラベルの水平オフセット
+        /// </summary>
+        public double ColorMapTickLabelHorizontalOffset { get; set; }
+
         #endregion
 
         // TODO ここにハイライトのプロパティを追加するのはおかしい。
@@ -191,6 +226,13 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
             // カラーマップのデフォルト値
             ColorMapDimensionName = null;
             ColorMap = OxyPalettes.Jet(256);
+            ShowColorMap = false;
+            ColorMapWidth = 30.0;
+            ColorMapMargin = 40.0;
+            ColorMapLabelFontSize = 10.0;
+            ColorMapLabelFontColor = OxyColors.Black;
+            ColorMapTickCount = 5;
+            ColorMapTickLabelHorizontalOffset = 5.0;
 
             // ハイライトのデフォルト値
             HighlightedLineId = null;
@@ -308,6 +350,12 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
 
             RenderAxes(rc);
             RenderDataLines(rc);
+
+            // カラーマップを描画
+            if (ShowColorMap && !string.IsNullOrEmpty(ColorMapDimensionName))
+            {
+                RenderColormap(rc);
+            }
 
             // インタラクションハンドラーで定義された描画の追加処理
             foreach (var handler in InteractionHandlers)
@@ -625,7 +673,114 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
         /// <param name="rc">レンダリングコンテキスト</param>
         private void RenderColormap(IRenderContext rc)
         {
-            // カラーバーの描画は一旦無効化
+            if (string.IsNullOrEmpty(ColorMapDimensionName) || !Dimensions.TryGetValue(ColorMapDimensionName, out var colorMapDimension))
+            {
+                return;
+            }
+
+            // カラーマップの位置を計算（一番右側）
+            double colorMapLeft = GetColorMapLeftPosition();
+            double colorMapRight = colorMapLeft + ColorMapWidth;
+            double colorMapTop = GetAxisTopPosition();
+            double colorMapBottom = GetAxisBottomPosition();
+            double availableHeight = GetAvailableHeight();
+
+            // カラーマップのバーを描画
+            int colorCount = ColorMap.Colors.Count;
+            double segmentHeight = availableHeight / colorCount;
+
+            for (int i = 0; i < colorCount; i++)
+            {
+                double yTop = colorMapBottom - (i + 1) * segmentHeight;
+                double yBottom = colorMapBottom - i * segmentHeight;
+
+                // 各色のセグメントを描画
+                var rect = new OxyRect(colorMapLeft, yTop, ColorMapWidth, yBottom - yTop);
+                rc.DrawRectangle(rect, ColorMap.Colors[i], OxyColors.Undefined, 0, EdgeRenderingMode.Automatic);
+            }
+
+            // カラーマップの枠線を描画
+            var framePoints = new[]
+            {
+                new ScreenPoint(colorMapLeft, colorMapTop),
+                new ScreenPoint(colorMapRight, colorMapTop),
+                new ScreenPoint(colorMapRight, colorMapBottom),
+                new ScreenPoint(colorMapLeft, colorMapBottom),
+                new ScreenPoint(colorMapLeft, colorMapTop)
+            };
+            rc.DrawLine(framePoints, AxisColor, AxisThickness, EdgeRenderingMode.Automatic);
+
+            // カラーマップのラベルを描画（上部）
+            if (ShowAxisLabelsTop)
+            {
+                var labelPoint = new ScreenPoint(
+                    colorMapLeft + ColorMapWidth / 2,
+                    colorMapTop - AxisLabelVerticalOffset
+                );
+                rc.DrawText(
+                    labelPoint,
+                    colorMapDimension.Label,
+                    ColorMapLabelFontColor,
+                    fontSize: ColorMapLabelFontSize,
+                    fontWeight: FontWeights.Bold,
+                    rotation: 0,
+                    horizontalAlignment: HorizontalAlignment.Center,
+                    verticalAlignment: VerticalAlignment.Bottom
+                );
+            }
+
+            // カラーマップのラベルを描画（下部）
+            if (ShowAxisLabelsBottom)
+            {
+                var labelPoint = new ScreenPoint(
+                    colorMapLeft + ColorMapWidth / 2,
+                    colorMapBottom + AxisLabelVerticalOffset
+                );
+                rc.DrawText(
+                    labelPoint,
+                    colorMapDimension.Label,
+                    ColorMapLabelFontColor,
+                    fontSize: ColorMapLabelFontSize,
+                    fontWeight: FontWeights.Bold,
+                    rotation: 0,
+                    horizontalAlignment: HorizontalAlignment.Center,
+                    verticalAlignment: VerticalAlignment.Top
+                );
+            }
+
+            // カラーマップの目盛りを描画
+            double plotBottom = GetAxisBottomPosition();
+            for (int t = 0; t <= ColorMapTickCount; t++)
+            {
+                // 目盛りの値を計算
+                double value = colorMapDimension.MinValue + (colorMapDimension.MaxValue - colorMapDimension.MinValue) * t / ColorMapTickCount;
+
+                // 値を0-1の範囲に正規化
+                double normalizedValue = (value - colorMapDimension.MinValue) / (colorMapDimension.MaxValue - colorMapDimension.MinValue);
+
+                // 正規化された値をY座標に変換（下から上に向かって配置）
+                double tickYPosition = plotBottom - normalizedValue * availableHeight;
+
+                // 目盛り線
+                rc.DrawLine(
+                    [new ScreenPoint(colorMapRight, tickYPosition), new ScreenPoint(colorMapRight + AxisTickLength, tickYPosition)],
+                    AxisTickColor,
+                    AxisTickThickness,
+                    EdgeRenderingMode.Automatic
+                );
+
+                // 目盛りラベル
+                rc.DrawText(
+                    new ScreenPoint(colorMapRight + AxisTickLength + ColorMapTickLabelHorizontalOffset, tickYPosition),
+                    value.ToString("F1"),
+                    AxisTickLabelColor,
+                    fontSize: AxisTickLabelFontSize,
+                    fontWeight: FontWeights.Normal,
+                    rotation: 0,
+                    horizontalAlignment: HorizontalAlignment.Left,
+                    verticalAlignment: VerticalAlignment.Middle
+                );
+            }
         }
 
         #endregion
@@ -807,9 +962,17 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
         public double GetAxisBottomPosition() => PlotModel.PlotArea.Bottom - VerticalMargin;
 
         /// <summary>
-        /// 利用可能な幅を取得します
+        /// 利用可能な幅を取得します（カラーマップがある場合はその分を差し引く）
         /// </summary>
-        public double GetAvailableWidth() => PlotModel.PlotArea.Width - 2 * HorizontalMargin;
+        public double GetAvailableWidth()
+        {
+            double baseWidth = PlotModel.PlotArea.Width - 2 * HorizontalMargin;
+            if (ShowColorMap && !string.IsNullOrEmpty(ColorMapDimensionName))
+            {
+                baseWidth -= ColorMapWidth + ColorMapMargin;
+            }
+            return baseWidth;
+        }
 
         /// <summary>
         /// 軸のX座標を取得します
@@ -823,6 +986,15 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
         /// 利用可能な高さを取得します
         /// </summary>
         public double GetAvailableHeight() => PlotModel.PlotArea.Height - 2 * VerticalMargin;
+
+        /// <summary>
+        /// カラーマップの左端位置を取得します
+        /// </summary>
+        public double GetColorMapLeftPosition()
+        {
+            double baseRight = PlotModel.PlotArea.Left + PlotModel.PlotArea.Width - HorizontalMargin;
+            return baseRight - ColorMapWidth;
+        }
 
         #endregion
     }
