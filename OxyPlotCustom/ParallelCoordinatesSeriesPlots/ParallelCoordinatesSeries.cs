@@ -641,6 +641,12 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
                     continue;
                 }
 
+                // フィルタリングされたラインは除外
+                if (IsLineFiltered(line))
+                {
+                    continue;
+                }
+
                 // 平方距離で比較して平方根計算を削減
                 double distance = GetDistanceToLine(point, line, minDistanceSquared);
                 
