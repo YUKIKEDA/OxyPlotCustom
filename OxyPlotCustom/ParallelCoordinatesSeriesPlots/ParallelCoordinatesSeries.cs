@@ -873,6 +873,13 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
                 return null;
             }
 
+            // マウスのX座標から、どの2軸間のセグメントかを特定
+            int? segmentIndex = GetSegmentIndexFromX(point.X);
+            if (!segmentIndex.HasValue)
+            {
+                return null;
+            }
+
             string? nearestLineId = null;
             double minDistanceSquared = double.MaxValue;
             double toleranceSquared = HitTestTolerance * HitTestTolerance; // 平方距離で比較
@@ -890,8 +897,8 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
                     continue;
                 }
 
-                // 平方距離で比較して平方根計算を削減
-                double distanceSquared = GetDistanceToLine(point, line);
+                // 特定したセグメントのみを計算対象にする（計算量を1/軸の数に削減）
+                double distanceSquared = GetDistanceToLineSegment(point, line, segmentIndex.Value);
                 
                 if (distanceSquared < minDistanceSquared && distanceSquared <= toleranceSquared)
                 {
@@ -904,15 +911,63 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
         }
 
         /// <summary>
-        /// 指定したポイントからラインまでの最短距離の2乗を計算します（平方根計算を避けるため）
-        /// ラインを構成する全てのセグメントをチェックし、最も近いセグメントまでの距離の2乗を返します。
+        /// マウスのX座標から、どの2軸間のセグメントかを特定します
+        /// 軸が等間隔に配置されていることを前提に、直接計算で高速化しています。
+        /// </summary>
+        /// <param name="x">マウスのX座標</param>
+        /// <returns>セグメントのインデックス（軸iと軸i+1の間）。見つからない場合はnull</returns>
+        private int? GetSegmentIndexFromX(double x)
+        {
+            if (Dimensions.Length < 2)
+            {
+                return null;
+            }
+
+            // プロットエリアの範囲外の場合はnullを返す
+            double plotLeft = PlotModel.PlotArea.Left + HorizontalMargin;
+            double plotRight = PlotModel.PlotArea.Right - HorizontalMargin;
+            if (ShowColorMap && !string.IsNullOrEmpty(ColorMapDimensionName))
+            {
+                plotRight -= ColorMapWidth + ColorMapMargin;
+            }
+
+            if (x < plotLeft || x > plotRight)
+            {
+                return null;
+            }
+
+            // 軸が等間隔に配置されているため、直接計算で高速化
+            double availableWidth = GetAvailableWidth();
+            double relativeX = x - plotLeft;
+            
+            // セグメントのインデックスを計算（0からDimensions.Length-2まで）
+            double segmentIndexDouble = relativeX / availableWidth * (Dimensions.Length - 1);
+            int segmentIndex = (int)Math.Floor(segmentIndexDouble);
+            
+            // 範囲チェック
+            if (segmentIndex < 0)
+            {
+                return 0; // 最初のセグメント
+            }
+            if (segmentIndex >= Dimensions.Length - 1)
+            {
+                return Dimensions.Length - 2; // 最後のセグメント
+            }
+
+            return segmentIndex;
+        }
+
+        /// <summary>
+        /// 指定したポイントからラインの特定セグメントまでの距離の2乗を計算します（平方根計算を避けるため）
+        /// バウンディングボックスを使った早期終了を実装しています。
         /// </summary>
         /// <param name="point">スクリーン座標</param>
         /// <param name="line">ライン</param>
-        /// <returns>ポイントからラインまでの距離の2乗（ピクセル^2）。無効な場合はdouble.MaxValue</returns>
-        private double GetDistanceToLine(ScreenPoint point, ParallelCoordinatesLine line)
+        /// <param name="segmentIndex">セグメントのインデックス（軸segmentIndexと軸segmentIndex+1の間）</param>
+        /// <returns>ポイントからラインセグメントまでの距離の2乗（ピクセル^2）。無効な場合はdouble.MaxValue</returns>
+        private double GetDistanceToLineSegment(ScreenPoint point, ParallelCoordinatesLine line, int segmentIndex)
         {
-            if (line.Values.Length != Dimensions.Length || Dimensions.Length < 2)
+            if (line.Values.Length != Dimensions.Length || Dimensions.Length < 2 || segmentIndex < 0 || segmentIndex >= Dimensions.Length - 1)
             {
                 return double.MaxValue;
             }
@@ -921,33 +976,30 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
             double availableHeight = GetAvailableHeight();
             double plotBottom = GetAxisBottomPosition();
 
-            // 各セグメントに対する距離を計算し、最小値を返す
-            // 平方距離で比較して平方根計算を削減
-            double minDistanceSquared = double.MaxValue;
-            
-            // 最初の点（第0軸）を計算
-            double x0 = GetAxisXPosition(0);
-            double y0 = plotBottom - Dimensions[0].NormalizeValue(line.Values[0]) * availableHeight;
-            ScreenPoint prevPoint = new ScreenPoint(x0, y0);
+            // セグメントの2つの端点を計算
+            double x0 = GetAxisXPosition(segmentIndex);
+            double y0 = plotBottom - Dimensions[segmentIndex].NormalizeValue(line.Values[segmentIndex]) * availableHeight;
+            ScreenPoint startPoint = new ScreenPoint(x0, y0);
 
-            // 第1軸以降のセグメントをチェック
-            for (int i = 1; i < Dimensions.Length; i++)
+            double x1 = GetAxisXPosition(segmentIndex + 1);
+            double y1 = plotBottom - Dimensions[segmentIndex + 1].NormalizeValue(line.Values[segmentIndex + 1]) * availableHeight;
+            ScreenPoint endPoint = new ScreenPoint(x1, y1);
+
+            // バウンディングボックスによる早期終了チェック
+            double tolerance = HitTestTolerance;
+            double minX = Math.Min(startPoint.X, endPoint.X) - tolerance;
+            double maxX = Math.Max(startPoint.X, endPoint.X) + tolerance;
+            double minY = Math.Min(startPoint.Y, endPoint.Y) - tolerance;
+            double maxY = Math.Max(startPoint.Y, endPoint.Y) + tolerance;
+
+            // ポイントがバウンディングボックスの範囲外の場合は即座に最大値を返す
+            if (point.X < minX || point.X > maxX || point.Y < minY || point.Y > maxY)
             {
-                double x1 = GetAxisXPosition(i);
-                double y1 = plotBottom - Dimensions[i].NormalizeValue(line.Values[i]) * availableHeight;
-                ScreenPoint currentPoint = new ScreenPoint(x1, y1);
-
-                double distanceSquared = GetDistanceSquaredToLineSegment(point, prevPoint, currentPoint);
-                
-                if (distanceSquared < minDistanceSquared)
-                {
-                    minDistanceSquared = distanceSquared;
-                }
-                
-                prevPoint = currentPoint;
+                return double.MaxValue;
             }
 
-            return minDistanceSquared;
+            // 線分までの距離を計算
+            return GetDistanceSquaredToLineSegment(point, startPoint, endPoint);
         }
 
         /// <summary>
