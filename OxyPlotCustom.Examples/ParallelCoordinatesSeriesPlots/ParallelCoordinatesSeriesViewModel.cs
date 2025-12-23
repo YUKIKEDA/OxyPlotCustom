@@ -1,4 +1,5 @@
 ﻿using OxyPlot;
+using Reactive.Bindings;
 using OxyPlotCustom.ParallelCoordinatesSeriesPlots;
 
 namespace OxyPlotCustom.Examples.ParallelCoordinatesSeriesPlots
@@ -6,6 +7,13 @@ namespace OxyPlotCustom.Examples.ParallelCoordinatesSeriesPlots
     public class ParallelCoordinatesSeriesViewModel
     {
         public PlotModel? PlotModel { get; private set; }
+
+        public ReactiveCommand<ScreenPoint> MouseMoveCommand { get; }
+        public ReactiveCommand MouseLeaveCommand { get; }
+        public ReactiveCommand<ScreenPoint> MouseDownCommand { get; }
+        public ReactiveCommand<ScreenPoint> MouseUpCommand { get; }
+
+        private ParallelCoordinatesSeries? Series { get; set; }
 
         public ParallelCoordinatesSeriesViewModel()
         {
@@ -18,13 +26,19 @@ namespace OxyPlotCustom.Examples.ParallelCoordinatesSeriesPlots
             var dimensions = GenerateStudentScoreData();
 
             // ParallelCoordinatesSeriesを作成してPlotModelに追加
-            var series = new ParallelCoordinatesSeries(dimensions);
+            Series = new ParallelCoordinatesSeries(dimensions);
             
             // カラーマップを「数学」軸に設定
-            series.ColorMapDimensionName = "Physical";
-            series.ColorMap = OxyPalettes.Jet(256);
+            Series.ColorMapDimensionName = "Physical";
+            Series.ColorMap = OxyPalettes.Jet(256);
             
-            PlotModel.Series.Add(series);
+            PlotModel.Series.Add(Series);
+
+            // コマンドを初期化
+            MouseMoveCommand = new ReactiveCommand<ScreenPoint>().WithSubscribe(OnMouseMove);
+            MouseLeaveCommand = new ReactiveCommand().WithSubscribe(OnMouseLeave);
+            MouseDownCommand = new ReactiveCommand<ScreenPoint>().WithSubscribe(OnMouseDown);
+            MouseUpCommand = new ReactiveCommand<ScreenPoint>().WithSubscribe(OnMouseUp);
         }
 
         /// <summary>
@@ -74,6 +88,64 @@ namespace OxyPlotCustom.Examples.ParallelCoordinatesSeriesPlots
                 { "Social", new ParallelCoordinatesDimension("社会", socialScores) },
                 { "Physical", new ParallelCoordinatesDimension("体育", physicalScores) }
             };
+        }
+
+        /// <summary>
+        /// マウス移動時のハイライト処理
+        /// </summary>
+        /// <param name="screenPoint">マウス位置のスクリーン座標</param>
+        private void OnMouseMove(ScreenPoint screenPoint)
+        {
+            if (Series == null || PlotModel == null)
+            {
+                return;
+            }
+
+            // 最も近いラインを取得
+            var nearestLineId = Series.GetNearestLineId(screenPoint);
+
+            // ハイライトを更新
+            if (Series.HighlightedLineId != nearestLineId)
+            {
+                Series.HighlightedLineId = nearestLineId;
+                PlotModel.InvalidatePlot(false);
+            }
+        }
+
+        /// <summary>
+        /// マウスが離れたときのハイライト解除処理
+        /// </summary>
+        private void OnMouseLeave()
+        {
+            if (Series == null || PlotModel == null)
+            {
+                return;
+            }
+
+            // ハイライトを解除
+            if (Series.HighlightedLineId != null)
+            {
+                Series.HighlightedLineId = null;
+                PlotModel.InvalidatePlot(false);
+            }
+        }
+
+        /// <summary>
+        /// マウスダウン時の処理
+        /// </summary>
+        /// <param name="screenPoint">マウス位置のスクリーン座標</param>
+        private void OnMouseDown(ScreenPoint screenPoint)
+        {
+            // 必要に応じて実装
+        }
+
+        /// <summary>
+        /// マウスアップ時の処理
+        /// </summary>
+        /// <param name="screenPoint">マウス位置のスクリーン座標</param>
+        private void OnMouseUp(ScreenPoint screenPoint)
+        {
+            // 必要に応じて実装
         }
     }
 }

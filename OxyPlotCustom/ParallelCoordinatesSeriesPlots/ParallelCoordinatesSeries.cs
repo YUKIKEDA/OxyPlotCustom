@@ -117,6 +117,25 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
 
         #endregion
 
+        #region Highlight
+
+        /// <summary>
+        /// ハイライトされているラインのID（nullの場合はハイライトなし）
+        /// </summary>
+        public string? HighlightedLineId { get; set; }
+
+        /// <summary>
+        /// ハイライト時のラインの太さ
+        /// </summary>
+        public double HighlightStrokeThickness { get; set; }
+
+        /// <summary>
+        /// ヒットテストの許容範囲（ピクセル）
+        /// </summary>
+        public double HitTestTolerance { get; set; }
+
+        #endregion
+
         public ParallelCoordinatesSeries(Dictionary<string, ParallelCoordinatesDimension> dimensions)
         {
             Dimensions = dimensions;
@@ -147,6 +166,11 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
             // カラーマップのデフォルト値
             ColorMapDimensionName = null;
             ColorMap = OxyPalettes.Jet(256);
+
+            // ハイライトのデフォルト値
+            HighlightedLineId = null;
+            HighlightStrokeThickness = 3.0;
+            HitTestTolerance = 10.0;
 
             #endregion
         }
@@ -396,14 +420,22 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
                 return;
             }
 
-            // 各ラインを描画
+            // まずハイライトされていないラインを描画
             foreach (var lineEntry in Lines)
             {
                 var line = lineEntry.Value;
-                if (line.IsVisible)
+                if (line.IsVisible && lineEntry.Key != HighlightedLineId)
                 {
                     RenderSingleDataLine(rc, line);
                 }
+            }
+
+            // 最後にハイライトされたラインを描画（上に重ねる）
+            if (!string.IsNullOrEmpty(HighlightedLineId) 
+                && Lines.TryGetValue(HighlightedLineId, out var highlightedLine) 
+                && highlightedLine.IsVisible)
+            {
+                RenderSingleDataLine(rc, highlightedLine, isHighlighted: true);
             }
         }
 
@@ -412,7 +444,8 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
         /// </summary>
         /// <param name="rc">レンダリングコンテキスト</param>
         /// <param name="line">描画するライン</param>
-        private void RenderSingleDataLine(IRenderContext rc, ParallelCoordinatesLine line)
+        /// <param name="isHighlighted">ハイライトされているかどうか</param>
+        private void RenderSingleDataLine(IRenderContext rc, ParallelCoordinatesLine line, bool isHighlighted = false)
         {
             if (line.Values.Length != Dimensions.Count)
             {
@@ -447,10 +480,14 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
             // 点が2つ以上ある場合のみ線を描画
             if (points.Count >= 2)
             {
+                // ハイライト時の色と太さを決定
+                var color = line.Color;
+                var thickness = isHighlighted ? HighlightStrokeThickness : line.StrokeThickness;
+
                 rc.DrawLine(
                     points,
-                    line.Color,
-                    line.StrokeThickness,
+                    color,
+                    thickness,
                     EdgeRenderingMode.Automatic
                 );
             }
@@ -517,6 +554,151 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
         private void RenderTooltip(IRenderContext rc)
         {
 
+        }
+
+        #endregion
+
+        #region Hit Test
+
+        /// <summary>
+        /// 指定したスクリーン座標から最も近いラインのIDを取得します
+        /// </summary>
+        /// <param name="point">スクリーン座標</param>
+        /// <returns>最も近いラインのID。見つからない場合はnull</returns>
+        public string? GetNearestLineId(ScreenPoint point)
+        {
+            if (Lines.Count == 0 || Dimensions.Count == 0)
+            {
+                return null;
+            }
+
+            string? nearestLineId = null;
+            double minDistanceSquared = double.MaxValue;
+            double toleranceSquared = HitTestTolerance * HitTestTolerance; // 平方距離で比較
+
+            foreach (var lineEntry in Lines)
+            {
+                var line = lineEntry.Value;
+                if (!line.IsVisible)
+                {
+                    continue;
+                }
+
+                // 平方距離で比較して平方根計算を削減
+                double distance = GetDistanceToLine(point, line, minDistanceSquared);
+                
+                if (distance != double.MaxValue)
+                {
+                    double distanceSquared = distance * distance;
+                    if (distanceSquared < minDistanceSquared && distanceSquared <= toleranceSquared)
+                    {
+                        minDistanceSquared = distanceSquared;
+                        nearestLineId = lineEntry.Key;
+                    }
+                }
+            }
+
+            return nearestLineId;
+        }
+
+        /// <summary>
+        /// 指定したポイントからラインまでの最短距離を計算します
+        /// </summary>
+        /// <param name="point">スクリーン座標</param>
+        /// <param name="line">ライン</param>
+        /// <param name="currentMinDistanceSquared">現在の最小距離の2乗（早期終了用、負の場合は無視）</param>
+        /// <returns>ポイントからラインまでの距離（ピクセル）。currentMinDistanceSquaredが指定され、それより大きい場合はdouble.MaxValue</returns>
+        private double GetDistanceToLine(ScreenPoint point, ParallelCoordinatesLine line, double currentMinDistanceSquared = -1)
+        {
+            if (line.Values.Length != Dimensions.Count)
+            {
+                return double.MaxValue;
+            }
+
+            // 利用可能な高さを取得
+            double availableHeight = GetAvailableHeight();
+            double plotBottom = GetAxisBottomPosition();
+
+            // 各軸での座標点を計算（配列を使用してGC負荷を削減）
+            int dimensionCount = Dimensions.Count;
+            if (dimensionCount < 2)
+            {
+                return double.MaxValue;
+            }
+
+            // 各セグメントに対する距離を計算し、最小値を返す
+            // 平方距離で比較して平方根計算を削減
+            double minDistanceSquared = double.MaxValue;
+            
+            // 前のポイントを保持して配列割り当てを回避
+            ScreenPoint? prevPoint = null;
+            int dimensionIndex = 0;
+            
+            foreach (var dimensionEntry in Dimensions)
+            {
+                var dimension = dimensionEntry.Value;
+                double x = GetAxisXPosition(dimensionIndex);
+                double value = line.Values[dimensionIndex];
+                double normalizedValue = (value - dimension.MinValue) / (dimension.MaxValue - dimension.MinValue);
+                double y = plotBottom - normalizedValue * availableHeight;
+                
+                var currentPoint = new ScreenPoint(x, y);
+                
+                if (prevPoint.HasValue)
+                {
+                    double distanceSquared = GetDistanceSquaredToLineSegment(point, prevPoint.Value, currentPoint);
+                    
+                    // 早期終了：既に現在の最小距離より大きい場合
+                    if (currentMinDistanceSquared > 0 && distanceSquared >= currentMinDistanceSquared)
+                    {
+                        return double.MaxValue;
+                    }
+                    
+                    if (distanceSquared < minDistanceSquared)
+                    {
+                        minDistanceSquared = distanceSquared;
+                    }
+                }
+                
+                prevPoint = currentPoint;
+                dimensionIndex++;
+            }
+
+            return Math.Sqrt(minDistanceSquared);
+        }
+
+        /// <summary>
+        /// ポイントから線分までの最短距離の2乗を計算します（平方根計算を避けるため）
+        /// </summary>
+        /// <param name="point">ポイント</param>
+        /// <param name="lineStart">線分の開始点</param>
+        /// <param name="lineEnd">線分の終了点</param>
+        /// <returns>ポイントから線分までの距離の2乗（ピクセル^2）</returns>
+        private static double GetDistanceSquaredToLineSegment(ScreenPoint point, ScreenPoint lineStart, ScreenPoint lineEnd)
+        {
+            double dx = lineEnd.X - lineStart.X;
+            double dy = lineEnd.Y - lineStart.Y;
+            double lengthSquared = dx * dx + dy * dy;
+
+            if (lengthSquared == 0)
+            {
+                // 線分が点の場合
+                double px = point.X - lineStart.X;
+                double py = point.Y - lineStart.Y;
+                return px * px + py * py;
+            }
+
+            // 線分上の最も近い点の位置を計算
+            double t = Math.Max(0, Math.Min(1, ((point.X - lineStart.X) * dx + (point.Y - lineStart.Y) * dy) / lengthSquared));
+
+            // 最も近い点
+            double closestX = lineStart.X + t * dx;
+            double closestY = lineStart.Y + t * dy;
+
+            // 距離の2乗を計算（平方根を避ける）
+            double distanceX = point.X - closestX;
+            double distanceY = point.Y - closestY;
+            return distanceX * distanceX + distanceY * distanceY;
         }
 
         #endregion
