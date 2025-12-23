@@ -422,7 +422,7 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
                 double value = dimension.MinValue + (dimension.MaxValue - dimension.MinValue) * t / AxisTickCount;
 
                 // 値を元のRangeに基づいて0-1の範囲に正規化
-                double normalizedValue = (value - dimension.MinValue) / (dimension.MaxValue - dimension.MinValue);
+                double normalizedValue = dimension.NormalizeValue(value);
 
                 // 正規化された値をY座標に変換（下から上に向かって配置）
                 double tickYPosition = plotBottom - normalizedValue * availableHeight;
@@ -553,7 +553,7 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
 
                 // 値を元のRange（MinValue～MaxValue）に基づいて正規化
                 // 目盛りは常に元の範囲を表示するため、ラインも同じ範囲で計算
-                double normalizedValue = (value - dimension.MinValue) / (dimension.MaxValue - dimension.MinValue);
+                double normalizedValue = dimension.NormalizeValue(value);
                 
                 // 正規化された値をY座標に変換（下から上に向かって配置）
                 double y = plotBottom - normalizedValue * availableHeight;
@@ -645,7 +645,7 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
                 {
                     double value = line.Values[index];
                     // 値を0-1の範囲に正規化
-                    double normalizedValue = (value - colorMapDimension.MinValue) / (colorMapDimension.MaxValue - colorMapDimension.MinValue);
+                    double normalizedValue = colorMapDimension.NormalizeValue(value);
                     normalizedValue = Math.Max(0.0, Math.Min(1.0, normalizedValue)); // 0-1の範囲にクランプ
                     
                     // カラーマップから色を取得（インデックスを計算）
@@ -748,7 +748,7 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
                 double value = colorMapDimension.MinValue + (colorMapDimension.MaxValue - colorMapDimension.MinValue) * t / ColorMapTickCount;
 
                 // 値を0-1の範囲に正規化
-                double normalizedValue = (value - colorMapDimension.MinValue) / (colorMapDimension.MaxValue - colorMapDimension.MinValue);
+                double normalizedValue = colorMapDimension.NormalizeValue(value);
 
                 // 正規化された値をY座標に変換（下から上に向かって配置）
                 double tickYPosition = plotBottom - normalizedValue * availableHeight;
@@ -875,7 +875,7 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
             {
                 double x = GetAxisXPosition(dimensionIndex);
                 double value = line.Values[dimensionIndex];
-                double normalizedValue = (value - dimension.MinValue) / (dimension.MaxValue - dimension.MinValue);
+                double normalizedValue = dimension.NormalizeValue(value);
                 double y = plotBottom - normalizedValue * availableHeight;
                 
                 var currentPoint = new ScreenPoint(x, y);

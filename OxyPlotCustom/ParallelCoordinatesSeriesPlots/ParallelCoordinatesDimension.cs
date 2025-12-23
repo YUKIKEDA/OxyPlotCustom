@@ -78,5 +78,20 @@
             DisplayMinValue = MinValue;
             DisplayMaxValue = MaxValue;
         }
+
+        /// <summary>
+        /// 値を0-1の範囲に正規化します
+        /// </summary>
+        /// <param name="value">正規化する値</param>
+        /// <returns>正規化された値（0.0～1.0）</returns>
+        public double NormalizeValue(double value)
+        {
+            double range = MaxValue - MinValue;
+            if (range == 0.0)
+            {
+                return 0.0;
+            }
+            return (value - MinValue) / range;
+        }
     }
 }

@@ -211,7 +211,7 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
             double plotBottom = series.GetAxisBottomPosition();
 
             double value = isUpper ? dimension.DisplayMaxValue : dimension.DisplayMinValue;
-            double normalizedValue = (value - dimension.MinValue) / (dimension.MaxValue - dimension.MinValue);
+            double normalizedValue = dimension.NormalizeValue(value);
             normalizedValue = Math.Max(0.0, Math.Min(1.0, normalizedValue));
 
             return plotBottom - normalizedValue * availableHeight;

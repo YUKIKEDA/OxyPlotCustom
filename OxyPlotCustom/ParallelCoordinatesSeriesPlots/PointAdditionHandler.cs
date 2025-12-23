@@ -219,7 +219,7 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
                 // 値をY座標に変換
                 double availableHeight = series.GetAvailableHeight();
                 double plotBottom = series.GetAxisBottomPosition();
-                double normalizedValue = (value - dimension.MinValue) / (dimension.MaxValue - dimension.MinValue);
+                double normalizedValue = dimension.NormalizeValue(value);
                 normalizedValue = Math.Max(0.0, Math.Min(1.0, normalizedValue));
                 double y = plotBottom - normalizedValue * availableHeight;
 
@@ -340,7 +340,7 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
                 // 値をY座標に変換
                 double availableHeight = series.GetAvailableHeight();
                 double plotBottom = series.GetAxisBottomPosition();
-                double normalizedValue = (value - dimension.MinValue) / (dimension.MaxValue - dimension.MinValue);
+                double normalizedValue = dimension.NormalizeValue(value);
                 normalizedValue = Math.Max(0.0, Math.Min(1.0, normalizedValue));
                 double y = plotBottom - normalizedValue * availableHeight;
 
@@ -434,7 +434,7 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
                 double value = line.Values[axisIndex];
 
                 // 値を正規化
-                double normalizedValue = (value - dimension.MinValue) / (dimension.MaxValue - dimension.MinValue);
+                double normalizedValue = dimension.NormalizeValue(value);
                 normalizedValue = Math.Max(0.0, Math.Min(1.0, normalizedValue));
 
                 // Y座標に変換
@@ -456,7 +456,7 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
                         double x = series.GetAxisXPosition(i);
                         double value = line.Values[i];
 
-                        double normalizedValue = (value - dimension.MinValue) / (dimension.MaxValue - dimension.MinValue);
+                        double normalizedValue = dimension.NormalizeValue(value);
                         normalizedValue = Math.Max(0.0, Math.Min(1.0, normalizedValue));
                         double y = plotBottom - normalizedValue * availableHeight;
 
