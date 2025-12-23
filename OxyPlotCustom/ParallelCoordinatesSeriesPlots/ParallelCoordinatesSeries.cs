@@ -10,14 +10,29 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
     public class ParallelCoordinatesSeries : ItemsSeries
     {
         /// <summary>
-        /// 次元（軸）のコレクション（キーは次元名、値は次元情報）
+        /// 次元（軸）の配列（順序は入力の順を保持）
         /// </summary>
-        public Dictionary<string, ParallelCoordinatesDimension> Dimensions { get; } = [];
+        public ParallelCoordinatesDimension[] Dimensions { get; }
 
         /// <summary>
-        /// ラインのコレクション（キーはラインID、値はライン情報）
+        /// 次元ラベルの配列（順序はDimensionsと同じ）
         /// </summary>
-        public Dictionary<string, ParallelCoordinatesLine> Lines { get; } = [];
+        public string[] DimensionLabels { get; }
+
+        /// <summary>
+        /// ラインの配列
+        /// </summary>
+        public ParallelCoordinatesLine[] Lines { get; private set; }
+
+        /// <summary>
+        /// 次元（軸）が存在するかどうか
+        /// </summary>
+        public bool HasDimensions => Dimensions != null && Dimensions.Length > 0;
+
+        /// <summary>
+        /// ラインが存在するかどうか
+        /// </summary>
+        public bool HasLines => Lines != null && Lines.Length > 0;
 
         /// <summary>
         /// インタラクションハンドラーのリスト
@@ -27,84 +42,84 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
         /// <summary>
         /// プロットエリアの上下の余白（ピクセル）
         /// </summary>
-        public double VerticalMargin { get; set; }
+        public double VerticalMargin { get; set; } = 30.0;
 
         /// <summary>
         /// プロットエリアの左右の余白（ピクセル）
         /// </summary>
-        public double HorizontalMargin { get; set; }
+        public double HorizontalMargin { get; set; } = 40.0;
 
         #region Axis Appearance
 
         /// <summary>
         /// 軸の色
         /// </summary>
-        public OxyColor AxisColor { get; set; }
+        public OxyColor AxisColor { get; set; } = OxyColors.Black;
 
         /// <summary>
         /// 軸の太さ
         /// </summary>
-        public double AxisThickness { get; set; }
+        public double AxisThickness { get; set; } = 1.0;
 
         /// <summary>
         /// 軸ラベルを上部に表示するかどうか
         /// </summary>
-        public bool ShowAxisLabelsTop { get; set; }
+        public bool ShowAxisLabelsTop { get; set; } = true;
 
         /// <summary>
         /// 軸ラベルを下部に表示するかどうか
         /// </summary>
-        public bool ShowAxisLabelsBottom { get; set; }
+        public bool ShowAxisLabelsBottom { get; set; } = true;
 
         /// <summary>
         /// 軸ラベルのフォントサイズ
         /// </summary>
-        public double AxisLabelFontSize { get; set; }
+        public double AxisLabelFontSize { get; set; } = 10.0;
 
         /// <summary>
         /// 軸ラベルのフォントカラー
         /// </summary>
-        public OxyColor AxisLabelFontColor { get; set; }
+        public OxyColor AxisLabelFontColor { get; set; } = OxyColors.Black;
 
         /// <summary>
         /// 軸ラベルの縦オフセット（ピクセル）
         /// </summary>
-        public double AxisLabelVerticalOffset { get; set; }
+        public double AxisLabelVerticalOffset { get; set; } = 15.0;
 
         /// <summary>
         /// 軸の目盛りカラー
         /// </summary>
-        public OxyColor AxisTickColor { get; set; }
+        public OxyColor AxisTickColor { get; set; } = OxyColors.Black;
 
         /// <summary>
         /// 軸の目盛りの太さ
         /// </summary>
-        public double AxisTickThickness { get; set; }
+        public double AxisTickThickness { get; set; } = 1.0;
 
         /// <summary>
         /// 軸の目盛ラベルの色
         /// </summary>
-        public OxyColor AxisTickLabelColor { get; set; }
+        public OxyColor AxisTickLabelColor { get; set; } = OxyColors.Black;
 
         /// <summary>
         /// 軸の目盛ラベルのフォントサイズ
         /// </summary>
-        public double AxisTickLabelFontSize { get; set; }
+        public double AxisTickLabelFontSize { get; set; } = 10.0;
 
         /// <summary>
         /// 軸の目盛り数
         /// </summary>
-        public int AxisTickCount { get; set; }
+        public int AxisTickCount { get; set; } = 5;
 
         /// <summary>
         /// 軸の目盛の長さ
         /// </summary>
-        public double AxisTickLength { get; set; }
+        public double AxisTickLength { get; set; } = 5.0;
 
         /// <summary>
         /// 軸の目盛ラベルの水平オフセット
         /// </summary>
-        public double AxisTickLabelHorizontalOffset { get; set; }
+        public double AxisTickLabelHorizontalOffset { get; set; } = 10.0;
 
         #endregion
 
@@ -118,42 +133,42 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
         /// <summary>
         /// カラーマップのパレット
         /// </summary>
-        public OxyPalette ColorMap { get; set; }
+        public OxyPalette ColorMap { get; set; } = OxyPalettes.Jet(256);
 
         /// <summary>
         /// カラーマップを表示するかどうか
         /// </summary>
-        public bool ShowColorMap { get; set; }
+        public bool ShowColorMap { get; set; } = false;
 
         /// <summary>
         /// カラーマップの幅（ピクセル）
         /// </summary>
-        public double ColorMapWidth { get; set; }
+        public double ColorMapWidth { get; set; } = 30.0;
 
         /// <summary>
         /// カラーマップと軸の間の余白（ピクセル）
         /// </summary>
-        public double ColorMapMargin { get; set; }
+        public double ColorMapMargin { get; set; } = 40.0;
 
         /// <summary>
         /// カラーマップのラベルのフォントサイズ
         /// </summary>
-        public double ColorMapLabelFontSize { get; set; }
+        public double ColorMapLabelFontSize { get; set; } = 10.0;
 
         /// <summary>
         /// カラーマップのラベルのフォントカラー
         /// </summary>
-        public OxyColor ColorMapLabelFontColor { get; set; }
+        public OxyColor ColorMapLabelFontColor { get; set; } = OxyColors.Black;
 
         /// <summary>
         /// カラーマップの目盛り数
         /// </summary>
-        public int ColorMapTickCount { get; set; }
+        public int ColorMapTickCount { get; set; } = 5;
 
         /// <summary>
         /// カラーマップの目盛りラベルの水平オフセット
         /// </summary>
-        public double ColorMapTickLabelHorizontalOffset { get; set; }
+        public double ColorMapTickLabelHorizontalOffset { get; set; } = 5.0;
 
         #endregion
 
@@ -169,12 +184,12 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
         /// <summary>
         /// ハイライト時のラインの太さ
         /// </summary>
-        public double HighlightStrokeThickness { get; set; }
+        public double HighlightStrokeThickness { get; set; } = 3.0;
 
         /// <summary>
         /// ヒットテストの許容範囲（ピクセル）
         /// </summary>
-        public double HitTestTolerance { get; set; }
+        public double HitTestTolerance { get; set; } = 10.0;
 
         #endregion
 
@@ -194,97 +209,34 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
 
         #endregion
 
-        public ParallelCoordinatesSeries(Dictionary<string, ParallelCoordinatesDimension> dimensions)
+        public ParallelCoordinatesSeries(IReadOnlyList<ParallelCoordinatesDimension> dimensions)
         {
-            Dimensions = dimensions;
-            Lines = CreateLinesFromDimensions(dimensions, dimensions.Keys);
+            Dimensions = dimensions?.ToArray() ?? Array.Empty<ParallelCoordinatesDimension>();
+            DimensionLabels = Dimensions.Select(d => d.Label).ToArray();
+            Lines = CreateLinesFromDimensions(Dimensions);
 
             InteractionHandlers = new List<IParallelCoordinatesInteractionHandler>();
-
-            #region Default Appearance
-
-            // 余白のデフォルト値
-            VerticalMargin = 30.0;
-            HorizontalMargin = 40.0;
-
-            // 軸の外観のデフォルト値
-            AxisColor = OxyColors.Black;
-            AxisThickness = 1.0;
-            ShowAxisLabelsTop = true;
-            ShowAxisLabelsBottom = true;
-            AxisLabelFontSize = 10.0;
-            AxisLabelFontColor = OxyColors.Black;
-            AxisLabelVerticalOffset = 15.0;
-            AxisTickColor = OxyColors.Black;
-            AxisTickThickness = 1.0;
-            AxisTickLabelColor = OxyColors.Black;
-            AxisTickLabelFontSize = 10.0;
-            AxisTickCount = 5;
-            AxisTickLength = 5.0;
-            AxisTickLabelHorizontalOffset = 10.0;
-
-            // カラーマップのデフォルト値
-            ColorMapDimensionName = null;
-            ColorMap = OxyPalettes.Jet(256);
-            ShowColorMap = false;
-            ColorMapWidth = 30.0;
-            ColorMapMargin = 40.0;
-            ColorMapLabelFontSize = 10.0;
-            ColorMapLabelFontColor = OxyColors.Black;
-            ColorMapTickCount = 5;
-            ColorMapTickLabelHorizontalOffset = 5.0;
-
-            // ハイライトのデフォルト値
-            HighlightedLineId = null;
-            HighlightStrokeThickness = 3.0;
-            HitTestTolerance = 10.0;
-
-            // 編集モードのデフォルト値
-            IsEditMode = false;
-            EditModeOpacity = 0.3;
-
-            #endregion
         }
 
         #region Initialization
 
         /// <summary>
-        /// ParallelCoordinatesDimensionのコレクションから、ParallelCoordinatesLineのディクショナリを作成します
+        /// ParallelCoordinatesDimensionの配列から、ParallelCoordinatesLineの配列を作成します
         /// </summary>
-        /// <param name="dimensions">次元のコレクション（キーは次元名、値は次元情報）</param>
-        /// <param name="dimensionOrder">次元の順序（この順序で値が並べられます）</param>
-        /// <returns>作成されたParallelCoordinatesLineのディクショナリ</returns>
-        private static Dictionary<string, ParallelCoordinatesLine> CreateLinesFromDimensions(
-            Dictionary<string, ParallelCoordinatesDimension> dimensions,
-            IEnumerable<string> dimensionOrder)
+        /// <param name="dimensions">次元の配列（順序は入力順）</param>
+        /// <returns>作成されたParallelCoordinatesLineの配列</returns>
+        private static ParallelCoordinatesLine[] CreateLinesFromDimensions(IReadOnlyList<ParallelCoordinatesDimension> dimensions)
         {
-            var lines = new Dictionary<string, ParallelCoordinatesLine>();
-
             if (dimensions.Count == 0)
             {
-                return lines;
+                return Array.Empty<ParallelCoordinatesLine>();
             }
 
-            // 次元の順序リストを取得
-            var orderList = dimensionOrder.ToList();
-            if (orderList.Count == 0)
+            // 各次元の値配列を順序通りに取得
+            var dimensionArrays = new List<double[]>(dimensions.Count);
+            for (int i = 0; i < dimensions.Count; i++)
             {
-                orderList = dimensions.Keys.ToList();
-            }
-
-            // 各次元の値の配列を取得
-            var dimensionArrays = new List<double[]>();
-            foreach (var key in orderList)
-            {
-                if (dimensions.TryGetValue(key, out var dimension))
-                {
-                    dimensionArrays.Add(dimension.Values);
-                }
-            }
-
-            if (dimensionArrays.Count == 0)
-            {
-                return lines;
+                dimensionArrays.Add(dimensions[i].Values);
             }
 
             // すべての次元で同じ長さの値配列を持つことを確認
@@ -295,6 +247,7 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
             }
 
             // 各インデックスでラインを作成
+            var lines = new ParallelCoordinatesLine[lineCount];
             for (int i = 0; i < lineCount; i++)
             {
                 var values = new double[dimensionArrays.Count];
@@ -303,8 +256,7 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
                     values[j] = dimensionArrays[j][i];
                 }
 
-                var line = new ParallelCoordinatesLine(values);
-                lines[$"Line_{i}"] = line;
+                lines[i] = new ParallelCoordinatesLine($"Line_{i}", values);
             }
 
             return lines;
@@ -340,7 +292,7 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
         /// <param name="rc">レンダリングコンテキスト</param>
         public override void Render(IRenderContext rc)
         {
-            if (Dimensions.Count == 0 || Lines.Count == 0)
+            if (!HasDimensions || !HasLines)
             {
                 return;
             }
@@ -348,8 +300,8 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
             // ラインの色をカラーマップから取得して設定
             UpdateLineColorsFromColorMap();
 
-            RenderAxes(rc);
             RenderDataLines(rc);
+            RenderAxes(rc);
 
             // カラーマップを描画
             if (ShowColorMap && !string.IsNullOrEmpty(ColorMapDimensionName))
@@ -377,14 +329,14 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
         /// <param name="rc">レンダリングコンテキスト</param>
         private void RenderAxes(IRenderContext rc)
         {
-            if (Dimensions.Count == 0)
+            if (!HasDimensions)
             {
                 return;
             }
 
-            for (int i = 0; i < Dimensions.Count; i++)
+            for (int i = 0; i < Dimensions.Length; i++)
             {
-                var dimension = Dimensions.ElementAt(i).Value;
+                var dimension = Dimensions[i];
 
                 // 各軸のX座標を計算（軸間隔を等分に配置）
                 double x = GetAxisXPosition(i);
@@ -501,28 +453,42 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
         /// <param name="rc">レンダリングコンテキスト</param>
         private void RenderDataLines(IRenderContext rc)
         {
-            if (Lines.Count == 0 || Dimensions.Count == 0)
+            if (!HasLines || !HasDimensions)
             {
                 return;
             }
 
             // まずハイライトされていないラインを描画
-            foreach (var lineEntry in Lines)
+            foreach (var line in Lines)
             {
-                var line = lineEntry.Value;
-                if (line.IsVisible && lineEntry.Key != HighlightedLineId)
+                if (line.IsVisible && line.Id != HighlightedLineId)
                 {
                     RenderSingleDataLine(rc, line);
                 }
             }
 
             // 最後にハイライトされたラインを描画（上に重ねる）
-            if (!string.IsNullOrEmpty(HighlightedLineId) 
-                && Lines.TryGetValue(HighlightedLineId, out var highlightedLine) 
-                && highlightedLine.IsVisible)
+            if (!string.IsNullOrEmpty(HighlightedLineId))
             {
-                RenderSingleDataLine(rc, highlightedLine, isHighlighted: true);
+                var highlightedLine = FindLineById(HighlightedLineId);
+                if (highlightedLine?.IsVisible == true)
+                {
+                    RenderSingleDataLine(rc, highlightedLine, isHighlighted: true);
+                }
             }
+        }
+
+        private ParallelCoordinatesLine? FindLineById(string lineId)
+        {
+            foreach (var line in Lines)
+            {
+                if (line.Id == lineId)
+                {
+                    return line;
+                }
+            }
+
+            return null;
         }
 
         /// <summary>
@@ -533,7 +499,7 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
         /// <param name="isHighlighted">ハイライトされているかどうか</param>
         private void RenderSingleDataLine(IRenderContext rc, ParallelCoordinatesLine line, bool isHighlighted = false)
         {
-            if (line.Values.Length != Dimensions.Count)
+            if (line.Values.Length != Dimensions.Length)
             {
                 return;
             }
@@ -547,9 +513,9 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
 
             // 各軸での座標点を計算
             var points = new List<ScreenPoint>();
-            for (int i = 0; i < Dimensions.Count; i++)
+            for (int i = 0; i < Dimensions.Length; i++)
             {
-                var dimension = Dimensions.ElementAt(i).Value;
+                var dimension = Dimensions[i];
 
                 // 軸のX座標を取得
                 double x = GetAxisXPosition(i);
@@ -605,15 +571,15 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
         /// <returns>フィルタ外（範囲外）の場合はtrue、範囲内の場合はfalse</returns>
         private bool IsLineFiltered(ParallelCoordinatesLine line)
         {
-            if (line.Values.Length != Dimensions.Count)
+            if (line.Values.Length != Dimensions.Length)
             {
                 return true;
             }
 
             // すべての次元で範囲内かどうかをチェック
-            for (int i = 0; i < Dimensions.Count; i++)
+            for (int i = 0; i < Dimensions.Length; i++)
             {
-                var dimension = Dimensions.ElementAt(i).Value;
+                var dimension = Dimensions[i];
                 double value = line.Values[i];
 
                 // DisplayMinValueとDisplayMaxValueの範囲外の場合はフィルタ外
@@ -635,26 +601,21 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
         /// </summary>
         private void UpdateLineColorsFromColorMap()
         {
-            if (string.IsNullOrEmpty(ColorMapDimensionName) || !Dimensions.TryGetValue(ColorMapDimensionName, out var colorMapDimension))
+            var colorMapDimensionIndex = GetDimensionIndexByLabel(ColorMapDimensionName);
+            if (!colorMapDimensionIndex.HasValue)
             {
                 return;
             }
 
-            // カラーマップに使用する軸のインデックスを取得
-            var colorMapDimensionIndex = Array.IndexOf(Dimensions.Keys.ToArray(), ColorMapDimensionName);
-
-            if (colorMapDimensionIndex < 0)
-            {
-                return;
-            }
+            var colorMapDimension = Dimensions[colorMapDimensionIndex.Value];
 
             // 各ラインの色をカラーマップから取得
-            foreach (var lineEntry in Lines)
+            int index = colorMapDimensionIndex.Value;
+            foreach (var line in Lines)
             {
-                var line = lineEntry.Value;
-                if (line.Values.Length > colorMapDimensionIndex)
+                if (line.Values.Length > index)
                 {
-                    double value = line.Values[colorMapDimensionIndex];
+                    double value = line.Values[index];
                     // 値を0-1の範囲に正規化
                     double normalizedValue = (value - colorMapDimension.MinValue) / (colorMapDimension.MaxValue - colorMapDimension.MinValue);
                     normalizedValue = Math.Max(0.0, Math.Min(1.0, normalizedValue)); // 0-1の範囲にクランプ
@@ -673,10 +634,13 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
         /// <param name="rc">レンダリングコンテキスト</param>
         private void RenderColormap(IRenderContext rc)
         {
-            if (string.IsNullOrEmpty(ColorMapDimensionName) || !Dimensions.TryGetValue(ColorMapDimensionName, out var colorMapDimension))
+            var colorMapDimensionIndex = GetDimensionIndexByLabel(ColorMapDimensionName);
+            if (!colorMapDimensionIndex.HasValue)
             {
                 return;
             }
+
+            var colorMapDimension = Dimensions[colorMapDimensionIndex.Value];
 
             // カラーマップの位置を計算（一番右側）
             double colorMapLeft = GetColorMapLeftPosition();
@@ -807,7 +771,7 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
         /// <returns>最も近いラインのID。見つからない場合はnull</returns>
         public string? GetNearestLineId(ScreenPoint point)
         {
-            if (Lines.Count == 0 || Dimensions.Count == 0)
+            if (!HasLines || !HasDimensions)
             {
                 return null;
             }
@@ -816,9 +780,8 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
             double minDistanceSquared = double.MaxValue;
             double toleranceSquared = HitTestTolerance * HitTestTolerance; // 平方距離で比較
 
-            foreach (var lineEntry in Lines)
+            foreach (var line in Lines)
             {
-                var line = lineEntry.Value;
                 if (!line.IsVisible)
                 {
                     continue;
@@ -839,7 +802,7 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
                     if (distanceSquared < minDistanceSquared && distanceSquared <= toleranceSquared)
                     {
                         minDistanceSquared = distanceSquared;
-                        nearestLineId = lineEntry.Key;
+                        nearestLineId = line.Id;
                     }
                 }
             }
@@ -856,7 +819,7 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
         /// <returns>ポイントからラインまでの距離（ピクセル）。currentMinDistanceSquaredが指定され、それより大きい場合はdouble.MaxValue</returns>
         private double GetDistanceToLine(ScreenPoint point, ParallelCoordinatesLine line, double currentMinDistanceSquared = -1)
         {
-            if (line.Values.Length != Dimensions.Count)
+            if (line.Values.Length != Dimensions.Length)
             {
                 return double.MaxValue;
             }
@@ -866,7 +829,7 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
             double plotBottom = GetAxisBottomPosition();
 
             // 各軸での座標点を計算（配列を使用してGC負荷を削減）
-            int dimensionCount = Dimensions.Count;
+            int dimensionCount = Dimensions.Length;
             if (dimensionCount < 2)
             {
                 return double.MaxValue;
@@ -880,9 +843,8 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
             ScreenPoint? prevPoint = null;
             int dimensionIndex = 0;
             
-            foreach (var dimensionEntry in Dimensions)
+            foreach (var dimension in Dimensions)
             {
-                var dimension = dimensionEntry.Value;
                 double x = GetAxisXPosition(dimensionIndex);
                 double value = line.Values[dimensionIndex];
                 double normalizedValue = (value - dimension.MinValue) / (dimension.MaxValue - dimension.MinValue);
@@ -980,7 +942,10 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
         /// <param name="axisIndex">軸のインデックス</param>
         /// <returns>軸のX座標</returns>
         public double GetAxisXPosition(int axisIndex)
-            => PlotModel.PlotArea.Left + HorizontalMargin + GetAvailableWidth() * axisIndex / (Dimensions.Count - 1);
+        {
+            int denominator = Math.Max(1, Dimensions.Length - 1);
+            return PlotModel.PlotArea.Left + HorizontalMargin + GetAvailableWidth() * axisIndex / denominator;
+        }
 
         /// <summary>
         /// 利用可能な高さを取得します
@@ -994,6 +959,22 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
         {
             double baseRight = PlotModel.PlotArea.Left + PlotModel.PlotArea.Width - HorizontalMargin;
             return baseRight - ColorMapWidth;
+        }
+
+        /// <summary>
+        /// ラベル名から次元（軸）のインデックスを取得します
+        /// </summary>
+        /// <param name="label">次元のラベル名</param>
+        /// <returns>見つかった場合はインデックス、見つからない場合はnull</returns>
+        public int? GetDimensionIndexByLabel(string? label)
+        {
+            if (string.IsNullOrEmpty(label))
+            {
+                return null;
+            }
+
+            int index = Array.FindIndex(DimensionLabels, l => l == label);
+            return index >= 0 ? index : null;
         }
 
         #endregion

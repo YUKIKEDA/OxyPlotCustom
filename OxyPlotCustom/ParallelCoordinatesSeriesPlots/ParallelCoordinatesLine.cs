@@ -1,3 +1,4 @@
+using System;
 using OxyPlot;
 
 namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
@@ -7,9 +8,7 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
     /// </summary>
     public class ParallelCoordinatesLine
     {
-        /// <summary>
-        /// 各次元（軸）での値の配列
-        /// </summary>
+        public string Id { get; }
         public double[] Values { get; }
 
         /// <summary>
@@ -51,8 +50,15 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
         /// コンストラクタ
         /// </summary>
         /// <param name="values">各次元（軸）での値の配列</param>
+        /// <param name="id">ラインID（省略時は一意のIDを自動生成）</param>
         public ParallelCoordinatesLine(double[] values)
+            : this(Guid.NewGuid().ToString("N"), values)
         {
+        }
+
+        public ParallelCoordinatesLine(string id, double[] values)
+        {
+            Id = id;
             Values = values;
         }
     }

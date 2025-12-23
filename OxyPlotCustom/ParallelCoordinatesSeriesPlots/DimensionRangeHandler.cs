@@ -52,7 +52,7 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
         /// </summary>
         public bool HandleMouseDown(ParallelCoordinatesSeries series, ScreenPoint point)
         {
-            if (!IsEnabled || series.Dimensions.Count == 0)
+            if (!IsEnabled || series.Dimensions.Length == 0)
             {
                 return false;
             }
@@ -61,9 +61,9 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
             _draggingHandle = null;
 
             // 各軸のハンドルをチェック
-            for (int i = 0; i < series.Dimensions.Count; i++)
+            for (int i = 0; i < series.Dimensions.Length; i++)
             {
-                var dimension = series.Dimensions.ElementAt(i).Value;
+                var dimension = series.Dimensions[i];
                 double x = series.GetAxisXPosition(i);
 
                 // 上限ハンドルの位置を計算
@@ -103,12 +103,12 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
         /// </summary>
         public bool HandleMouseMove(ParallelCoordinatesSeries series, ScreenPoint point)
         {
-            if (!IsEnabled || _draggingHandle == null || series.Dimensions.Count == 0)
+            if (!IsEnabled || _draggingHandle == null || series.Dimensions.Length == 0)
             {
                 return false;
             }
 
-            var dimension = series.Dimensions.ElementAt(_draggingHandle.DimensionIndex).Value;
+            var dimension = series.Dimensions[_draggingHandle.DimensionIndex];
 
             // Y座標から値を逆算
             double availableHeight = series.GetAvailableHeight();
@@ -161,15 +161,15 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
         /// </summary>
         public void Render(ParallelCoordinatesSeries series, IRenderContext rc)
         {
-            if (!IsEnabled || series.Dimensions.Count == 0)
+            if (!IsEnabled || series.Dimensions.Length == 0)
             {
                 return;
             }
 
             // 各軸のハンドルを描画
-            for (int i = 0; i < series.Dimensions.Count; i++)
+            for (int i = 0; i < series.Dimensions.Length; i++)
             {
-                var dimension = series.Dimensions.ElementAt(i).Value;
+                var dimension = series.Dimensions[i];
                 double x = series.GetAxisXPosition(i);
 
                 // 上限ハンドルを描画

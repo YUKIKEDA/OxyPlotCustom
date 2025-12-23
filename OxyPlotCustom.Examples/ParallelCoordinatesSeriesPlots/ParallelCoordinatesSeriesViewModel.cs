@@ -103,8 +103,8 @@ namespace OxyPlotCustom.Examples.ParallelCoordinatesSeriesPlots
         /// <summary>
         /// CSVファイルからデータを読み込みます
         /// </summary>
-        /// <returns>次元データのディクショナリ</returns>
-        private static Dictionary<string, ParallelCoordinatesDimension> LoadDataFromCsv()
+        /// <returns>次元データの配列（ヘッダー順）</returns>
+        private static ParallelCoordinatesDimension[] LoadDataFromCsv()
         {
             // CSVファイルのパスを取得（実行ファイルの場所からの相対パス）
             var csvPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ParallelCoordinatesSeriesPlots", "data.csv");
@@ -167,15 +167,10 @@ namespace OxyPlotCustom.Examples.ParallelCoordinatesSeriesPlots
                 }
             }
 
-            // 次元データを作成
-            var dimensions = new Dictionary<string, ParallelCoordinatesDimension>();
-            foreach (var header in headers)
-            {
-                var dataArray = columnData[header].ToArray();
-                dimensions[header] = new ParallelCoordinatesDimension(header, dataArray);
-            }
-
-            return dimensions;
+            // 次元データを作成（ヘッダー順を保持）
+            return headers
+                .Select(header => new ParallelCoordinatesDimension(header, columnData[header].ToArray()))
+                .ToArray();
         }
 
         /// <summary>

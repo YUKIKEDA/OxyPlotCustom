@@ -97,7 +97,7 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
         /// </summary>
         public bool HandleMouseDown(ParallelCoordinatesSeries series, ScreenPoint point)
         {
-            if (!IsEnabled || !IsEditMode || series.Dimensions.Count == 0)
+            if (!IsEnabled || !IsEditMode || series.Dimensions.Length == 0)
             {
                 return false;
             }
@@ -140,7 +140,7 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
         /// </summary>
         public bool HandleMouseMove(ParallelCoordinatesSeries series, ScreenPoint point)
         {
-            if (!IsEnabled || !IsEditMode || _draggingPointAxisIndex == null || series.Dimensions.Count == 0)
+            if (!IsEnabled || !IsEditMode || _draggingPointAxisIndex == null || series.Dimensions.Length == 0)
             {
                 return false;
             }
@@ -188,7 +188,7 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
         /// </summary>
         public void Render(ParallelCoordinatesSeries series, IRenderContext rc)
         {
-            if (!IsEnabled || !IsEditMode || series.Dimensions.Count == 0)
+            if (!IsEnabled || !IsEditMode || series.Dimensions.Length == 0)
             {
                 return;
             }
@@ -213,7 +213,7 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
                 int axisIndex = pointEntry.Key;
                 double value = pointEntry.Value;
 
-                var dimension = series.Dimensions.ElementAt(axisIndex).Value;
+                var dimension = series.Dimensions[axisIndex];
                 double x = series.GetAxisXPosition(axisIndex);
 
                 // 値をY座標に変換
@@ -242,7 +242,7 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
         /// </summary>
         private int? GetClickedAxisIndex(ParallelCoordinatesSeries series, ScreenPoint point)
         {
-            for (int i = 0; i < series.Dimensions.Count; i++)
+            for (int i = 0; i < series.Dimensions.Length; i++)
             {
                 double axisX = series.GetAxisXPosition(i);
                 double distance = Math.Abs(point.X - axisX);
@@ -267,7 +267,7 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
         /// </summary>
         private double GetValueFromYPosition(ParallelCoordinatesSeries series, int axisIndex, double y)
         {
-            var dimension = series.Dimensions.ElementAt(axisIndex).Value;
+            var dimension = series.Dimensions[axisIndex];
             double availableHeight = series.GetAvailableHeight();
             double plotBottom = series.GetAxisBottomPosition();
 
@@ -298,8 +298,8 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
 
             // 点が1つ以上追加されている場合、ラインを作成
             // 点が追加されていない軸については、その次元の中央値を使用
-            var values = new double[series.Dimensions.Count];
-            for (int i = 0; i < series.Dimensions.Count; i++)
+            var values = new double[series.Dimensions.Length];
+            for (int i = 0; i < series.Dimensions.Length; i++)
             {
                 if (_addedPoints.TryGetValue(i, out double value))
                 {
@@ -308,13 +308,13 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
                 else
                 {
                     // 点が追加されていない軸がある場合は、その次元の中央値を使用
-                    var dimension = series.Dimensions.ElementAt(i).Value;
+                    var dimension = series.Dimensions[i];
                     values[i] = (dimension.MinValue + dimension.MaxValue) / 2.0;
                 }
             }
 
             // すべての軸に点が追加されているかどうかを判定
-            bool isComplete = _addedPoints.Count == series.Dimensions.Count;
+            bool isComplete = _addedPoints.Count == series.Dimensions.Length;
 
             _temporaryLine = new ParallelCoordinatesLine(values)
             {
@@ -334,7 +334,7 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
                 int axisIndex = pointEntry.Key;
                 double value = pointEntry.Value;
 
-                var dimension = series.Dimensions.ElementAt(axisIndex).Value;
+                var dimension = series.Dimensions[axisIndex];
                 double x = series.GetAxisXPosition(axisIndex);
 
                 // 値をY座標に変換
@@ -412,7 +412,7 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
         /// </summary>
         private void RenderTemporaryLine(ParallelCoordinatesSeries series, IRenderContext rc, ParallelCoordinatesLine line)
         {
-            if (line.Values.Length != series.Dimensions.Count || _addedPoints.Count < 2)
+            if (line.Values.Length != series.Dimensions.Length || _addedPoints.Count < 2)
             {
                 return;
             }
@@ -421,7 +421,7 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
             double plotBottom = series.GetAxisBottomPosition();
 
             // すべての軸に点が追加されているかどうかを判定
-            bool isComplete = _addedPoints.Count == series.Dimensions.Count;
+            bool isComplete = _addedPoints.Count == series.Dimensions.Length;
 
             // 追加された点の座標を計算（ソート済み）
             var addedPointPositions = new List<ScreenPoint>();
@@ -429,7 +429,7 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
 
             foreach (int axisIndex in sortedAxisIndices)
             {
-                var dimension = series.Dimensions.ElementAt(axisIndex).Value;
+                var dimension = series.Dimensions[axisIndex];
                 double x = series.GetAxisXPosition(axisIndex);
                 double value = line.Values[axisIndex];
 
@@ -450,9 +450,9 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
                 {
                     // すべての点が追加されている場合：すべての軸を通る実線を描画
                     var allPoints = new List<ScreenPoint>();
-                    for (int i = 0; i < series.Dimensions.Count; i++)
+                    for (int i = 0; i < series.Dimensions.Length; i++)
                     {
-                        var dimension = series.Dimensions.ElementAt(i).Value;
+                        var dimension = series.Dimensions[i];
                         double x = series.GetAxisXPosition(i);
                         double value = line.Values[i];
 
