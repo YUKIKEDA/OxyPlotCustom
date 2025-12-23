@@ -39,6 +39,8 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
         /// </summary>
         public List<IParallelCoordinatesInteractionHandler> InteractionHandlers { get; set; }
 
+        #region Plot Area Margins
+
         /// <summary>
         /// プロットエリアの上下の余白（ピクセル）
         /// </summary>
@@ -48,6 +50,8 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
         /// プロットエリアの左右の余白（ピクセル）
         /// </summary>
         public double HorizontalMargin { get; set; } = 40.0;
+
+        #endregion
 
         #region Axis Appearance
 
@@ -209,7 +213,7 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
 
         #endregion
 
-        public ParallelCoordinatesSeries(IReadOnlyList<ParallelCoordinatesDimension> dimensions)
+        public ParallelCoordinatesSeries(IEnumerable<ParallelCoordinatesDimension> dimensions)
         {
             Dimensions = dimensions?.ToArray() ?? Array.Empty<ParallelCoordinatesDimension>();
             DimensionLabels = Dimensions.Select(d => d.Label).ToArray();
@@ -225,18 +229,20 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
         /// </summary>
         /// <param name="dimensions">次元の配列（順序は入力順）</param>
         /// <returns>作成されたParallelCoordinatesLineの配列</returns>
-        private static ParallelCoordinatesLine[] CreateLinesFromDimensions(IReadOnlyList<ParallelCoordinatesDimension> dimensions)
+        private static ParallelCoordinatesLine[] CreateLinesFromDimensions(IEnumerable<ParallelCoordinatesDimension> dimensions)
         {
-            if (dimensions.Count == 0)
+            var dimensionsList = dimensions?.ToList() ?? new List<ParallelCoordinatesDimension>();
+            
+            if (dimensionsList.Count == 0)
             {
                 return Array.Empty<ParallelCoordinatesLine>();
             }
 
             // 各次元の値配列を順序通りに取得
-            var dimensionArrays = new List<double[]>(dimensions.Count);
-            for (int i = 0; i < dimensions.Count; i++)
+            var dimensionArrays = new List<double[]>(dimensionsList.Count);
+            for (int i = 0; i < dimensionsList.Count; i++)
             {
-                dimensionArrays.Add(dimensions[i].Values);
+                dimensionArrays.Add(dimensionsList[i].Values);
             }
 
             // すべての次元で同じ長さの値配列を持つことを確認
