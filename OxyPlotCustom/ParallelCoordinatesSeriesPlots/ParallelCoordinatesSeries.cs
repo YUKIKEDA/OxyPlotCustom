@@ -122,6 +122,8 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
 
         #endregion
 
+        // TODO ここにハイライトのプロパティを追加するのはおかしい。
+
         #region Highlight
 
         /// <summary>
@@ -138,6 +140,22 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
         /// ヒットテストの許容範囲（ピクセル）
         /// </summary>
         public double HitTestTolerance { get; set; }
+
+        #endregion
+
+        #region Edit Mode
+
+        // TODO ここに編集モードのプロパティを追加するのはおかしい。
+
+        /// <summary>
+        /// 編集モードが有効かどうか（編集モード時は既存のプロットに透明度を適用）
+        /// </summary>
+        public bool IsEditMode { get; set; } = false;
+
+        /// <summary>
+        /// 編集モード時の既存プロットの透明度（0.0～1.0、デフォルトは0.3）
+        /// </summary>
+        public double EditModeOpacity { get; set; } = 0.3;
 
         #endregion
 
@@ -178,6 +196,10 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
             HighlightedLineId = null;
             HighlightStrokeThickness = 3.0;
             HitTestTolerance = 10.0;
+
+            // 編集モードのデフォルト値
+            IsEditMode = false;
+            EditModeOpacity = 0.3;
 
             #endregion
         }
@@ -508,6 +530,12 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
                 {
                     // 透明度設定
                     byte alpha = (byte)(255 * 0.1);
+                    color = OxyColor.FromArgb(alpha, color.R, color.G, color.B);
+                }
+                // 編集モード時で、ハイライトされていないラインには透明度を適用
+                else if (IsEditMode && !isHighlighted)
+                {
+                    byte alpha = (byte)(255 * EditModeOpacity);
                     color = OxyColor.FromArgb(alpha, color.R, color.G, color.B);
                 }
                 

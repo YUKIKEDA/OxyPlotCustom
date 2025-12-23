@@ -20,21 +20,21 @@
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
 
             <Border Grid.Column="0">
                 <TextBlock
                     HorizontalAlignment="Right"
                     VerticalAlignment="Center"
-                    Text="Enable Interaction" />
+                    Text="編集モード" />
             </Border>
             <Border Grid.Column="1">
                 <ToggleButton
-                    x:Name="ToggleButton"
                     Width="80"
                     Height="30"
                     Margin="5"
-                    IsChecked="False" />
+                    IsChecked="{Binding IsEditMode.Value}" />
             </Border>
         </Grid>
 

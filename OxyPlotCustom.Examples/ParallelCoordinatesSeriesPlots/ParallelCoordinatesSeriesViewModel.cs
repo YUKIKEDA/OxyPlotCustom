@@ -13,7 +13,13 @@ namespace OxyPlotCustom.Examples.ParallelCoordinatesSeriesPlots
         public ReactiveCommand<ScreenPoint> MouseDownCommand { get; }
         public ReactiveCommand<ScreenPoint> MouseUpCommand { get; }
 
+        /// <summary>
+        /// 編集モードが有効かどうか
+        /// </summary>
+        public ReactiveProperty<bool> IsEditMode { get; }
+
         private ParallelCoordinatesSeries? Series { get; set; }
+        private PointAdditionHandler? PointAdditionHandler { get; set; }
 
         public ParallelCoordinatesSeriesViewModel()
         {
@@ -36,7 +42,36 @@ namespace OxyPlotCustom.Examples.ParallelCoordinatesSeriesPlots
             var rangeHandler = new DimensionRangeHandler();
             Series.InteractionHandlers.Add(rangeHandler);
             
+            // 点追加ハンドラーを追加
+            PointAdditionHandler = new PointAdditionHandler();
+            Series.InteractionHandlers.Add(PointAdditionHandler);
+            
             PlotModel.Series.Add(Series);
+
+            // 編集モードのプロパティを初期化
+            IsEditMode = new ReactiveProperty<bool>(false);
+            IsEditMode.Subscribe(isEditMode =>
+            {
+                if (PointAdditionHandler != null && Series != null)
+                {
+                    PointAdditionHandler.IsEditMode = isEditMode;
+                    Series.IsEditMode = isEditMode;
+                    if (isEditMode)
+                    {
+                        // 編集モードを有効にしたときにハイライトをクリア
+                        if (Series.HighlightedLineId != null)
+                        {
+                            Series.HighlightedLineId = null;
+                        }
+                    }
+                    else
+                    {
+                        // 編集モードを無効にしたときにリセット
+                        PointAdditionHandler.ResetEditMode();
+                    }
+                    PlotModel?.InvalidatePlot(false);
+                }
+            });
 
             // コマンドを初期化
             MouseMoveCommand = new ReactiveCommand<ScreenPoint>().WithSubscribe(OnMouseMove);
@@ -116,6 +151,18 @@ namespace OxyPlotCustom.Examples.ParallelCoordinatesSeriesPlots
                 }
             }
 
+            // 編集モード時はハイライト処理をスキップ
+            if (Series.IsEditMode)
+            {
+                // ハイライトをクリア
+                if (Series.HighlightedLineId != null)
+                {
+                    Series.HighlightedLineId = null;
+                    PlotModel.InvalidatePlot(false);
+                }
+                return;
+            }
+
             // ハンドラーで処理されなかった場合のみハイライト処理
             if (!handled)
             {
@@ -137,6 +184,12 @@ namespace OxyPlotCustom.Examples.ParallelCoordinatesSeriesPlots
         private void OnMouseLeave()
         {
             if (Series == null || PlotModel == null)
+            {
+                return;
+            }
+
+            // 編集モード時はハイライト処理をスキップ
+            if (Series.IsEditMode)
             {
                 return;
             }
