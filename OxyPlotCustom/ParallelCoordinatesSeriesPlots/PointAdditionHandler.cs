@@ -7,6 +7,8 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
     /// </summary>
     public class PointAdditionHandler : IParallelCoordinatesInteractionHandler
     {
+        // TODO シングルクリックでハンドルを動かせるようにしたい
+        
         /// <summary>
         /// ハンドラーが有効かどうか
         /// </summary>
@@ -20,7 +22,7 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
         /// <summary>
         /// 追加された点のコレクション（キーは次元のインデックス、値はその次元での値）
         /// </summary>
-        private Dictionary<int, double> _addedPoints = new Dictionary<int, double>();
+        private Dictionary<int, double> _addedPoints = [];
 
         /// <summary>
         /// 一時的なライン（編集モードで作成されたライン）
@@ -564,10 +566,5 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
             double dy = p2.Y - p1.Y;
             return Math.Sqrt(dx * dx + dy * dy);
         }
-
-        /// <summary>
-        /// 一時的なラインを取得します（nullの場合は未完成）
-        /// </summary>
-        public ParallelCoordinatesLine? GetTemporaryLine() => _temporaryLine;
     }
 }

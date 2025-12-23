@@ -183,7 +183,7 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
         /// <summary>
         /// カラーマップと軸の間の余白（ピクセル）
         /// </summary>
-        public double ColorMapMargin { get; set; } = 40.0;
+        public double ColorMapMargin { get; set; } = 60.0;
 
         /// <summary>
         /// カラーマップのラベルのフォントサイズ
@@ -712,7 +712,7 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
                 // 目盛りラベル
                 rc.DrawText(
                     new ScreenPoint(colorMapRight + AxisTickLength + ColorMapTickLabelHorizontalOffset, tickYPosition),
-                    value.ToString("F1"),
+                    FormatTickLabel(value),
                     AxisTickLabelColor,
                     fontSize: AxisTickLabelFontSize,
                     fontWeight: FontWeights.Normal,
@@ -721,19 +721,6 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
                     verticalAlignment: VerticalAlignment.Middle
                 );
             }
-        }
-
-        #endregion
-
-        #region Rendering Tooltips
-
-        /// <summary>
-        /// 固定ツールチップを描画します
-        /// </summary>
-        /// <param name="rc">レンダリングコンテキスト</param>
-        private void RenderTooltip(IRenderContext rc)
-        {
-
         }
 
         #endregion
