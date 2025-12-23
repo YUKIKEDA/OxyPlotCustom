@@ -207,26 +207,10 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
 
         #endregion
 
-        // TODO ここにハイライトのプロパティを追加するのはおかしい。
-
-        #region Highlight
-
-        /// <summary>
-        /// ハイライトされているラインのID（nullの場合はハイライトなし）
-        /// </summary>
-        public string? HighlightedLineId { get; set; }
-
-        /// <summary>
-        /// ハイライト時のラインの太さ
-        /// </summary>
-        public double HighlightStrokeThickness { get; set; } = 3.0;
-
         /// <summary>
         /// ヒットテストの許容範囲（ピクセル）
         /// </summary>
         public double HitTestTolerance { get; set; } = 10.0;
-
-        #endregion
 
         #region Filtered Line Appearance
 
@@ -546,37 +530,14 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
                 return;
             }
 
-            // まずハイライトされていないラインを描画
+            // すべてのラインを順番に描画
             foreach (var line in Lines)
             {
-                if (line.IsVisible && line.Id != HighlightedLineId)
+                if (line.IsVisible)
                 {
                     RenderSingleDataLine(rc, line);
                 }
             }
-
-            // 最後にハイライトされたラインを描画（上に重ねる）
-            if (!string.IsNullOrEmpty(HighlightedLineId))
-            {
-                var highlightedLine = FindLineById(HighlightedLineId);
-                if (highlightedLine?.IsVisible == true)
-                {
-                    RenderSingleDataLine(rc, highlightedLine, isHighlighted: true);
-                }
-            }
-        }
-
-        private ParallelCoordinatesLine? FindLineById(string lineId)
-        {
-            foreach (var line in Lines)
-            {
-                if (line.Id == lineId)
-                {
-                    return line;
-                }
-            }
-
-            return null;
         }
 
         /// <summary>
@@ -584,8 +545,7 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
         /// </summary>
         /// <param name="rc">レンダリングコンテキスト</param>
         /// <param name="line">描画するライン</param>
-        /// <param name="isHighlighted">ハイライトされているかどうか</param>
-        private void RenderSingleDataLine(IRenderContext rc, ParallelCoordinatesLine line, bool isHighlighted = false)
+        private void RenderSingleDataLine(IRenderContext rc, ParallelCoordinatesLine line)
         {
             if (line.Values.Length != Dimensions.Length)
             {
@@ -615,7 +575,7 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
             // 点が2つ以上ある場合のみ線を描画
             if (_renderPointsBuffer.Count >= 2)
             {
-                // ハイライト時の色と太さを決定
+                // 色と太さを決定
                 var color = line.Color;
                 
                 // フィルタ外の場合は透明度を適用
@@ -624,7 +584,7 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
                     color = ApplyOpacityAndLightness(color, FilteredLineOpacity, FilteredLineLightness);
                 }
                 
-                var thickness = isHighlighted ? HighlightStrokeThickness : line.StrokeThickness;
+                var thickness = line.StrokeThickness;
 
                 rc.DrawLine(
                     _renderPointsBuffer,
