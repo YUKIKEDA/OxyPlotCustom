@@ -64,6 +64,7 @@ namespace OxyPlotCustom.Examples.ParallelCoordinatesSeriesPlots
             set { SetValue(MouseLeaveCommandProperty, value); }
         }
 
+
         /// <summary>
         /// ビヘイビアがPlotViewにアタッチされたときに呼び出されます。
         /// マウスイベントのハンドラーを登録します。
@@ -73,8 +74,9 @@ namespace OxyPlotCustom.Examples.ParallelCoordinatesSeriesPlots
             base.OnAttached();
             AssociatedObject.MouseMove += OnMouseMove;
             AssociatedObject.MouseLeave += OnMouseLeave;
-            AssociatedObject.MouseLeftButtonDown += OnMouseLeftButtonDown;
-            AssociatedObject.MouseLeftButtonUp += OnMouseLeftButtonUp;
+            // Previewイベントを使用して、OxyPlotがイベントを消費する前に処理する
+            AssociatedObject.PreviewMouseLeftButtonDown += OnPreviewMouseLeftButtonDown;
+            AssociatedObject.PreviewMouseLeftButtonUp += OnPreviewMouseLeftButtonUp;
         }
 
         /// <summary>
@@ -86,8 +88,8 @@ namespace OxyPlotCustom.Examples.ParallelCoordinatesSeriesPlots
             base.OnDetaching();
             AssociatedObject.MouseMove -= OnMouseMove;
             AssociatedObject.MouseLeave -= OnMouseLeave;
-            AssociatedObject.MouseLeftButtonDown -= OnMouseLeftButtonDown;
-            AssociatedObject.MouseLeftButtonUp -= OnMouseLeftButtonUp;
+            AssociatedObject.PreviewMouseLeftButtonDown -= OnPreviewMouseLeftButtonDown;
+            AssociatedObject.PreviewMouseLeftButtonUp -= OnPreviewMouseLeftButtonUp;
         }
 
         /// <summary>
@@ -106,33 +108,38 @@ namespace OxyPlotCustom.Examples.ParallelCoordinatesSeriesPlots
         }
 
         /// <summary>
-        /// マウス左ボタン押下イベントのハンドラー
+        /// マウス左ボタン押下イベントのハンドラー（Previewイベント）
         /// </summary>
         /// <param name="sender">イベントの送信元</param>
         /// <param name="e">マウスボタンイベントの引数</param>
-        private void OnMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        private void OnPreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
             if (MouseDownCommand != null && MouseDownCommand.CanExecute(null))
             {
                 var position = e.GetPosition(AssociatedObject);
                 var screenPoint = new ScreenPoint(position.X, position.Y);
                 MouseDownCommand.Execute(screenPoint);
+                
+                // OxyPlotのデフォルト動作（パン、ズームなど）を抑制して、シングルクリックでドラッグできるようにする
                 e.Handled = true;
             }
         }
 
         /// <summary>
-        /// マウス左ボタン解放イベントのハンドラー
+        /// マウス左ボタン解放イベントのハンドラー（Previewイベント）
         /// </summary>
         /// <param name="sender">イベントの送信元</param>
         /// <param name="e">マウスボタンイベントの引数</param>
-        private void OnMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        private void OnPreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
             if (MouseUpCommand != null && MouseUpCommand.CanExecute(null))
             {
                 var position = e.GetPosition(AssociatedObject);
                 var screenPoint = new ScreenPoint(position.X, position.Y);
                 MouseUpCommand.Execute(screenPoint);
+                
+                // OxyPlotのデフォルト動作を抑制
+                e.Handled = true;
             }
         }
 
