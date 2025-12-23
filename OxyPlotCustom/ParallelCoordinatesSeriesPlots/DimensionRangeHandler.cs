@@ -135,6 +135,9 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
                 dimension.DisplayMinValue = value;
             }
 
+            // フィルタを更新（ラインのIsVisibleを更新）
+            UpdateLineVisibility(series);
+
             // プロットを更新
             series.PlotModel?.InvalidatePlot(false);
 
@@ -225,6 +228,45 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
             double dx = p2.X - p1.X;
             double dy = p2.Y - p1.Y;
             return Math.Sqrt(dx * dx + dy * dy);
+        }
+
+        /// <summary>
+        /// ラインの可視性を更新します（フィルタ条件に基づいてIsVisibleを設定）
+        /// </summary>
+        /// <param name="series">並行座標シリーズ</param>
+        private static void UpdateLineVisibility(ParallelCoordinatesSeries series)
+        {
+            if (!series.HasLines || !series.HasDimensions)
+            {
+                return;
+            }
+
+            foreach (var line in series.Lines)
+            {
+                if (line.Values.Length != series.Dimensions.Length)
+                {
+                    line.IsVisible = false;
+                    continue;
+                }
+
+                // すべての次元で範囲内かどうかをチェック
+                bool isFiltered = false;
+                for (int i = 0; i < series.Dimensions.Length; i++)
+                {
+                    var dimension = series.Dimensions[i];
+                    double value = line.Values[i];
+
+                    // DisplayMinValueとDisplayMaxValueの範囲外の場合はフィルタ外
+                    if (value < dimension.DisplayMinValue || value > dimension.DisplayMaxValue)
+                    {
+                        isFiltered = true;
+                        break;
+                    }
+                }
+
+                // フィルタ外の場合はIsVisibleをFalseに設定
+                line.IsVisible = !isFiltered;
+            }
         }
     }
 }

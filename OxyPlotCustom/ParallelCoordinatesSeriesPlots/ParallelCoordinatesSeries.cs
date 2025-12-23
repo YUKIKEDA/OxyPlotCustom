@@ -212,20 +212,6 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
         /// </summary>
         public double HitTestTolerance { get; set; } = 10.0;
 
-        #region Filtered Line Appearance
-
-        /// <summary>
-        /// フィルタ外のラインの透明度（0.0～1.0、デフォルトは0.1）
-        /// </summary>
-        public double FilteredLineOpacity { get; set; } = 0.1;
-
-        /// <summary>
-        /// フィルタ外のラインの色の薄さ（0.0=元の色、1.0=白、デフォルトは0.7）
-        /// </summary>
-        public double FilteredLineLightness { get; set; } = 0.7;
-
-        #endregion
-
         public ParallelCoordinatesSeries(IEnumerable<ParallelCoordinatesDimension> dimensions)
         {
             Dimensions = dimensions?.ToArray() ?? Array.Empty<ParallelCoordinatesDimension>();
@@ -552,9 +538,6 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
                 return;
             }
 
-            // フィルタリング：すべての次元で範囲内かどうかをチェック
-            bool isFiltered = IsLineFiltered(line);
-
             // 利用可能な高さを取得
             double availableHeight = GetAvailableHeight();
             double plotBottom = GetAxisBottomPosition();
@@ -575,68 +558,13 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
             // 点が2つ以上ある場合のみ線を描画
             if (_renderPointsBuffer.Count >= 2)
             {
-                // 色と太さを決定
-                var color = line.Color;
-                
-                // フィルタ外の場合は透明度を適用
-                if (isFiltered)
-                {
-                    color = ApplyOpacityAndLightness(color, FilteredLineOpacity, FilteredLineLightness);
-                }
-                
-                var thickness = line.StrokeThickness;
-
                 rc.DrawLine(
                     _renderPointsBuffer,
-                    color,
-                    thickness,
+                    line.Color,
+                    line.StrokeThickness,
                     EdgeRenderingMode.Automatic
                 );
             }
-        }
-
-        /// <summary>
-        /// 色に透明度と明度を適用します
-        /// </summary>
-        /// <param name="color">元の色</param>
-        /// <param name="opacity">透明度（0.0～1.0）</param>
-        /// <param name="lightness">色の薄さ（0.0=元の色、1.0=白）</param>
-        /// <returns>透明度と薄さが適用された色</returns>
-        private static OxyColor ApplyOpacityAndLightness(OxyColor color, double opacity, double lightness)
-        {
-            byte alpha = (byte)(255 * opacity);
-            byte r = (byte)(color.R * (1 - lightness) + 255 * lightness);
-            byte g = (byte)(color.G * (1 - lightness) + 255 * lightness);
-            byte b = (byte)(color.B * (1 - lightness) + 255 * lightness);
-            return OxyColor.FromArgb(alpha, r, g, b);
-        }
-
-        /// <summary>
-        /// ラインがフィルタリング条件を満たしているかどうかを判定します
-        /// </summary>
-        /// <param name="line">判定するライン</param>
-        /// <returns>フィルタ外（範囲外）の場合はtrue、範囲内の場合はfalse</returns>
-        private bool IsLineFiltered(ParallelCoordinatesLine line)
-        {
-            if (line.Values.Length != Dimensions.Length)
-            {
-                return true;
-            }
-
-            // すべての次元で範囲内かどうかをチェック
-            for (int i = 0; i < Dimensions.Length; i++)
-            {
-                var dimension = Dimensions[i];
-                double value = line.Values[i];
-
-                // DisplayMinValueとDisplayMaxValueの範囲外の場合はフィルタ外
-                if (value < dimension.DisplayMinValue || value > dimension.DisplayMaxValue)
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         #endregion
@@ -843,12 +771,6 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
             foreach (var line in Lines)
             {
                 if (!line.IsVisible)
-                {
-                    continue;
-                }
-
-                // フィルタリングされたラインは除外
-                if (IsLineFiltered(line))
                 {
                     continue;
                 }
