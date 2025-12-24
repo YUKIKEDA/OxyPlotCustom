@@ -60,7 +60,7 @@ namespace OxyPlotCustom.Examples.ParallelCoordinatesSeriesPlots
             
             // カラーマップを設定
             Series.ColorMapDimensionName = "colorVal";
-            Series.ColorMap = OxyPalettes.Jet(256);
+            Series.ColorMap = OxyPalettes.Jet(8);
             
             // 範囲調整ハンドラーを追加
             var rangeHandler = new DimensionRangeHandler();

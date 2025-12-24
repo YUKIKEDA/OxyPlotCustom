@@ -557,7 +557,7 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
                     _renderPointsBuffer,
                     line.Color,
                     line.StrokeThickness,
-                    EdgeRenderingMode.Automatic
+                    EdgeRenderingMode.PreferSpeed
                 );
             }
         }
@@ -591,7 +591,7 @@ namespace OxyPlotCustom.ParallelCoordinatesSeriesPlots
                     normalizedValue = Math.Max(0.0, Math.Min(1.0, normalizedValue)); // 0-1の範囲にクランプ
                     
                     // カラーマップから色を取得（インデックスを計算）
-                    int colorIndex = (int)(normalizedValue * (ColorMap.Colors.Count - 1));
+                    int colorIndex = (int)(normalizedValue * (ColorMap.Colors.Count));
                     colorIndex = Math.Max(0, Math.Min(ColorMap.Colors.Count - 1, colorIndex));
                     line.Color = ColorMap.Colors[colorIndex];
                 }
